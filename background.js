@@ -12,6 +12,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return true; // Keep message channel open for async response
   }
   
+  if (message.type === 'SEARCH_LINKA') {
+    searchLinkaAPI(message.companyName)
+      .then(result => sendResponse(result));
+    return true;
+  }
+  
   if (message.type === 'COMPANY_FOUND') {
     // Store the company info for popup to retrieve
     chrome.storage.local.set({
@@ -303,5 +309,39 @@ async function updateBadge(companyName) {
     }
   } catch (error) {
     chrome.action.setBadgeText({ text: '' });
+  }
+}
+
+// Search Linka.ir API for company registration info
+async function searchLinkaAPI(companyName) {
+  try {
+    const rnd = Math.floor(100 + Math.random() * 900); // 3-digit random number
+    const url = `https://api.linka.ir/Api/V1/Site/SuggestionSearch?search=${encodeURIComponent(companyName)}&typeId=2&rnd=${rnd}`;
+    
+    const response = await fetch(url);
+    if (!response.ok) throw new Error('Failed to fetch Linka data');
+    
+    const data = await response.json();
+    
+    if (data.success && data.data && data.data.length > 0) {
+      // Filter only typeId: 2 (companies), exclude typeId: 1 (individuals)
+      const companiesOnly = data.data.filter(item => item.typeId === 2);
+      
+      return {
+        success: true,
+        companies: companiesOnly.map(item => ({
+          code: item.code,
+          standardName: item.standardName,
+          nationalId: item.subTitle,
+          logoUrl: item.isLogoView ? `https://api.linka.ir/Api/V1/common/companyLogo?code=${item.code}` : null,
+          pageUrl: `https://linka.ir/company/${item.code}/${encodeURIComponent(item.standardName)}`
+        }))
+      };
+    }
+    
+    return { success: true, companies: [] };
+  } catch (error) {
+    console.error('Error searching Linka API:', error);
+    return { success: false, error: error.message, companies: [] };
   }
 }

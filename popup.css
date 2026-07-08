@@ -198,6 +198,80 @@ body {
   color: #999;
 }
 
+/* Linka Section */
+.linka-section {
+  margin-bottom: 16px;
+}
+
+.linka-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+
+}
+
+.linka-subtitle {
+  font-size: 9px;
+  font-weight: 600;
+  color: #c62828;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.linka-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.linka-card {
+  background: white;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.linka-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #f0f0f0;
+}
+
+.linka-info {
+  flex: 1;
+}
+
+.linka-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 2px;
+}
+
+.linka-national-id {
+  font-size: 11px;
+  color: #888;
+  direction: rtl;
+  text-align: right;
+}
+
+.linka-link {
+  font-size: 11px;
+  color: #1976d2;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.linka-link:hover {
+  text-decoration: underline;
+}
+
 .review-text {
   font-size: 13px;
   color: #444;

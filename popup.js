@@ -99,6 +99,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (result.found) {
       showResult(result.company);
+      
+      // Also search Linka API for company registration info
+      const linkaResult = await searchLinkaAPI(lastCompany.name);
+      if (linkaResult.success && linkaResult.companies) {
+        showLinkaResults(linkaResult.companies);
+      }
     } else {
       showNotFound(lastCompany.name);
     }
@@ -257,4 +263,72 @@ async function searchCompany(companyName) {
       }
     );
   });
+}
+
+async function searchLinkaAPI(companyName) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { type: 'SEARCH_LINKA', companyName: companyName },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response);
+        }
+      }
+    );
+  });
+}
+
+function showLinkaResults(companies) {
+  const linkaSection = document.getElementById('linka-section');
+  const linkaList = document.getElementById('linka-list');
+  
+  if (!companies || companies.length === 0) {
+    linkaSection.style.display = 'none';
+    return;
+  }
+  
+  linkaList.innerHTML = '';
+  
+  companies.forEach(company => {
+    const card = document.createElement('div');
+    card.className = 'linka-card';
+    
+    const logo = document.createElement('img');
+    logo.className = 'linka-logo';
+    logo.src = company.logoUrl || 'https://placehold.co/40?text=logo';
+    logo.alt = company.standardName;
+    logo.onerror = function() {
+      this.src = 'https://placehold.co/40?text=logo';
+    };
+    
+    const info = document.createElement('div');
+    info.className = 'linka-info';
+    
+    const name = document.createElement('div');
+    name.className = 'linka-name';
+    name.textContent = company.standardName;
+    
+    const nationalId = document.createElement('div');
+    nationalId.className = 'linka-national-id';
+    nationalId.textContent = `شناسه ملی: ${company.nationalId}`;
+    
+    info.appendChild(name);
+    info.appendChild(nationalId);
+    
+    const link = document.createElement('a');
+    link.className = 'linka-link';
+    link.href = company.pageUrl;
+    link.target = '_blank';
+    link.textContent = 'اطلاعات بیشتر';
+    
+    card.appendChild(logo);
+    card.appendChild(info);
+    card.appendChild(link);
+    
+    linkaList.appendChild(card);
+  });
+  
+  linkaSection.style.display = 'block';
 }

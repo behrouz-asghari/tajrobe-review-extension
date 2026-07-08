@@ -12,7 +12,8 @@
     "https://jobvision.ir/*",
     "https://www.jobvision.ir/*",
     "https://jobinja.ir/*",
-    "https://www.jobinja.ir/*"
+    "https://www.jobinja.ir/*",
+    "https://api.linka.ir/*"
   ],
   "action": {
     "default_popup": "popup.html",
