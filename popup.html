@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تجربه کاری شرکت‌ها</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="title">تجربه‌های کاری</h1>
+      <a href="https://tajrobe.github.io" target="_blank" class="logo-link">
+        <span class="logo-text">tajrobe.github.io</span>
+      </a>
+    </header>
+
+    <div id="loading" class="loading">
+      <div class="spinner"></div>
+      <p>در حال جستجو...</p>
+    </div>
+
+    <div id="error" class="error" style="display: none;">
+      <p id="error-message"></p>
+    </div>
+
+    <div id="not-company" class="not-company" style="display: none;">
+      <p>در صفحه شرکتی در جاب‌ویژن یا جابینجا نیستید</p>
+      <p class="hint">به صفحه شرکت مورد نظر بروید و دوباره تلاش کنید</p>
+    </div>
+
+    <div id="result" class="result" style="display: none;">
+      <div class="company-card">
+        <div id="company-logo" class="company-logo" style="display: none;">
+          <img id="logo-img" src="" alt="لوگو">
+        </div>
+        <div class="company-info">
+          <h2 id="company-name" class="company-name"></h2>
+          <p id="company-name-en" class="company-name-en"></p>
+          <p id="company-city" class="company-city"></p>
+        </div>
+      </div>
+      
+      <div class="actions">
+        <a id="company-link" href="" target="_blank" class="btn btn-primary">
+          مشاهده تجربه‌ها در تجربه
+        </a>
+      </div>
+    </div>
+
+    <div id="not-found" class="not-found" style="display: none;">
+      <p class="not-found-title">شرکت یافت نشد</p>
+      <p id="search-term" class="search-term"></p>
+      <div class="actions">
+        <a id="search-link" href="" target="_blank" class="btn btn-secondary">
+          جستجو در تجربه
+        </a>
+      </div>
+    </div>
+
+    <footer class="footer">
+      <p>داده از <a href="https://tajrobe.github.io" target="_blank">تجربه</a></p>
+    </footer>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
