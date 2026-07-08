@@ -4,6 +4,38 @@ let cachedData = null;
 let cacheTimestamp = null;
 const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 
+// Helper function to check if URL is a company page
+function isCompanyPage(url) {
+  if (!url) return false;
+  return /jobvision\.ir\/companies\//.test(url) || 
+         /jobinja\.ir\/companies\//.test(url);
+}
+
+// Listen for tab updates to clear badge when leaving company pages
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === 'complete' && tab.url) {
+    if (!isCompanyPage(tab.url)) {
+      // Not a company page - clear badge
+      chrome.action.setBadgeText({ text: '', tabId: tabId });
+      chrome.storage.local.remove('lastCompany');
+    }
+  }
+});
+
+// Listen for tab activation (switching tabs)
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab.url && !isCompanyPage(tab.url)) {
+      // Not a company page - clear badge
+      chrome.action.setBadgeText({ text: '', tabId: activeInfo.tabId });
+      chrome.storage.local.remove('lastCompany');
+    }
+  } catch (error) {
+    // Tab might not be accessible
+  }
+});
+
 // Listen for messages from content script and popup
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === 'SEARCH_COMPANY') {
@@ -31,6 +63,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     
     // Update badge
     updateBadge(message.companyName);
+  }
+  
+  if (message.type === 'CLEAR_BADGE') {
+    // Clear badge when not on a company page
+    chrome.action.setBadgeText({ text: '' });
+    // Clear stored company info
+    chrome.storage.local.remove('lastCompany');
   }
 });
 

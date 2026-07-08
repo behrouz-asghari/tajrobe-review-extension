@@ -62,5 +62,10 @@
       source: source,
       pageUrl: window.location.href
     });
+  } else {
+    // Clear badge when not on a company page
+    chrome.runtime.sendMessage({
+      type: 'CLEAR_BADGE'
+    });
   }
 })();

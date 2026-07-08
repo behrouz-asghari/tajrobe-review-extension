@@ -5,6 +5,7 @@
   "description": "مشاهده تجربه‌های کاری شرکت‌ها از tajrobe.github.io هنگام بازدید از جاب‌ویژن و جابینجا",
   "permissions": [
     "activeTab",
+    "tabs",
     "storage"
   ],
   "host_permissions": [
