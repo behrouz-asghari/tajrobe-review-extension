@@ -2,6 +2,8 @@
 
 A Chrome extension that displays company reviews and registration information when browsing job listings on [JobVision](https://jobvision.ir) and [Jobinja](https://jobinja.ir).
 
+<img width="1323" height="992" alt="Screenshot 2026-07-09 012914" src="https://github.com/user-attachments/assets/6b36ea65-7cdc-4760-9994-9ec2a3d437f3" />
+
 ## Features
 
 - **Auto-detect company pages** on JobVision and Jobinja
