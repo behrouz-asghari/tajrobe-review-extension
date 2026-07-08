@@ -1,42 +1,112 @@
-# افزونه تجربه‌های کاری شرکت‌ها
+# Company Review Finder - Chrome Extension
 
-این افزونه کروم به شما امکان می‌دهد هنگام بازدید از صفحه شرکت‌ها در سایت‌های جاب‌ویژن و جابینجا، تجربه‌های کاری مرتبط را از سایت [تجربه](https://tajrobe.github.io) مشاهده کنید.
+A Chrome extension that displays company reviews and registration information when browsing job listings on [JobVision](https://jobvision.ir) and [Jobinja](https://jobinja.ir).
 
-## نصب
+## Features
 
-1. فایل‌های افزونه را دانلود کنید
-2. آیکون‌ها را ایجاد کنید (فایل `icons/create-icons.html` را در مرورگر باز کرده و روی هر کانواس راست کلیک کرده و Save Image as... را بزنید)
-3. در مرورگر کروم به `chrome://extensions/` بروید
-4. حالت Developer را فعال کنید
-5. روی "Load unpacked" کلیک کنید
-6. پوشه افزونه را انتخاب کنید
+- **Auto-detect company pages** on JobVision and Jobinja
+- **Fetch work experience reviews** from [Tajrobe](https://tajrobe.github.io)
+- **Display company registration info** from [Linka.ir](https://linka.ir) API
+- **Exact name matching badge** - Shows ✅ when company names match exactly
+- **Persian date conversion** - Displays dates in Shamsi (Jalali) calendar
+- **RTL support** - Full Persian/Farsi interface
+- **Badge indicators** - Shows checkmark (✓) or cross (✗) on extension icon
 
-## نحوه کار
+## Installation
 
-1. به صفحه یک شرکت در جاب‌ویژن یا جابینجا بروید
-2. روی آیکون افزونه کلیک کنید
-3. اطلاعات شرکت از تجربه نمایش داده می‌شود
+### From Source (Developer Mode)
 
-### نمونه آدرس‌ها
+1. Clone or download this repository
+2. Open Chrome and navigate to `chrome://extensions/`
+3. Enable **Developer mode** (toggle in top right)
+4. Click **Load unpacked**
+5. Select the `company-review-extension` folder
+6. The extension icon will appear in your toolbar
 
-**جاب‌ویژن:**
-- `https://jobvision.ir/companies/837/استخدام-اُکالا`
-- `https://jobvision.ir/companies/84005/استخدام-گارنو-پرگاس`
+## Usage
 
-**جابینجا:**
-- `https://jobinja.ir/companies/tabdeal/jobs`
-- `https://jobinja.ir/companies/parmis-it`
+1. Navigate to a company page on JobVision or Jobinja:
+   - **JobVision**: `https://jobvision.ir/companies/{id}/{company-name}`
+   - **Jobinja**: `https://jobinja.ir/companies/{company-slug}`
 
-## استخراج نام شرکت
+2. Click the extension icon in your toolbar
 
-### جاب‌ویژن
-- از HTML: عنصر `<label class="heading-04 jvt-text-black">`
-- از URL: حذف پیشوند "استخدام-" از آخرین بخش آدرس
+3. View the information:
+   - Company info from Tajrobe
+   - Work experience reviews with ratings
+   - Company registration details from Linka.ir
 
-### جابینجا
-- از HTML: عنصر `<h2 class="c-companyHeader__name">` (بخش فارسی قبل از "|")
-- از URL: نام اسلاگ شرکت
+## How It Works
 
-## جستجو در تجربه
+### Company Name Extraction
 
-افزونه در فایل `search.json` سایت تجربه جستجو می‌کند و بر اساس نام فارسی و انگلیسی شرکت، بهترین تطابق را پیدا می‌کند.
+| Platform | Method |
+|----------|--------|
+| **JobVision** | HTML element `<label class="heading-04 jvt-text-black">` or URL (removes "استخدام-" prefix) |
+| **Jobinja** | HTML element `<h2 class="c-companyHeader__name">` (Persian name before "|") or URL slug |
+
+### Data Sources
+
+| Source | Data Type |
+|--------|-----------|
+| [Tajrobe](https://tajrobe.github.io) | Work experience reviews, company ratings |
+| [Linka.ir](https://linka.ir) | Company registration info, national ID, logo |
+
+### API Endpoints
+
+- **Tajrobe**: `https://tajrobe.github.io/assets/search.json`
+- **Linka**: `https://api.linka.ir/Api/V1/Site/SuggestionSearch?search={name}&typeId=2`
+
+## Badge Indicators
+
+| Badge | Meaning |
+|-------|---------|
+| ✓ (Green) | Company found in Tajrobe database |
+| ✗ (Red) | Company not found in Tajrobe database |
+| (Empty) | Not on a company page |
+
+## Permissions
+
+- `activeTab` - Access current tab
+- `tabs` - Monitor tab navigation
+- `storage` - Cache company data
+- Host permissions for Tajrobe, JobVision, Jobinja, and Linka.ir APIs
+
+## Development
+
+### Project Structure
+
+```
+company-review-extension/
+├── manifest.json      # Extension configuration
+├── background.js      # Service worker for API calls
+├── content.js         # Content script for name extraction
+├── popup.html         # Popup UI
+├── popup.css          # Popup styles
+├── popup.js           # Popup logic
+├── icons/             # Extension icons
+└── README.md          # This file
+```
+
+### Building
+
+No build step required. This is a vanilla JavaScript Chrome extension.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- [Tajrobe](https://tajrobe.github.io) - Work experience sharing platform
+- [Linka.ir](https://linka.ir) - Iranian company registration database
+- [JobVision](https://jobvision.ir) - Job listing platform
+- [Jobinja](https://jobinja.ir) - Job listing platform
