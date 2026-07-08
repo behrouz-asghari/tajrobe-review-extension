@@ -1,4 +1,4 @@
-// Popup script - displays company info from tajrobe.github.io
+// Popup script - displays company info and reviews from tajrobe.github.io
 
 document.addEventListener('DOMContentLoaded', async () => {
   const loadingEl = document.getElementById('loading');
@@ -58,6 +58,8 @@ function showResult(company) {
   const linkEl = document.getElementById('company-link');
   const logoEl = document.getElementById('company-logo');
   const logoImg = document.getElementById('logo-img');
+  const reviewsSection = document.getElementById('reviews-section');
+  const reviewsList = document.getElementById('reviews-list');
 
   nameEl.textContent = company.title;
   nameEnEl.textContent = company.titleEn || '';
@@ -71,7 +73,92 @@ function showResult(company) {
     logoEl.style.display = 'none';
   }
 
+  // Display reviews
+  if (company.reviews && company.reviews.length > 0) {
+    reviewsList.innerHTML = '';
+    
+    company.reviews.forEach((review, index) => {
+      const reviewCard = createReviewCard(review, index);
+      reviewsList.appendChild(reviewCard);
+    });
+    
+    reviewsSection.style.display = 'block';
+  } else {
+    reviewsSection.style.display = 'none';
+  }
+
   resultEl.style.display = 'block';
+}
+
+function createReviewCard(review, index) {
+  const card = document.createElement('div');
+  card.className = 'review-card';
+  
+  // Header with job title and date
+  const header = document.createElement('div');
+  header.className = 'review-header';
+  
+  // Job title
+  const jobTitleDiv = document.createElement('div');
+  jobTitleDiv.className = 'review-job-title';
+  jobTitleDiv.textContent = review.jobTitle || '';
+  
+  // Date
+  const dateSpan = document.createElement('span');
+  dateSpan.className = 'review-date';
+  dateSpan.textContent = review.date || '';
+  
+  header.appendChild(jobTitleDiv);
+  header.appendChild(dateSpan);
+  
+  // Rating stars
+  const ratingDiv = document.createElement('div');
+  ratingDiv.className = 'review-rating';
+  
+  const ratingValue = typeof review.rating === 'number' ? review.rating : 0;
+  for (let i = 1; i <= 5; i++) {
+    const star = document.createElement('span');
+    star.className = i <= ratingValue ? 'star' : 'star empty';
+    star.textContent = '★';
+    ratingDiv.appendChild(star);
+  }
+  
+  // Review text
+  const textDiv = document.createElement('div');
+  textDiv.className = 'review-text';
+  textDiv.textContent = review.text;
+  
+  // Read more button (if text is long)
+  const readMoreBtn = document.createElement('button');
+  readMoreBtn.className = 'read-more';
+  readMoreBtn.textContent = 'بیشتر...';
+  readMoreBtn.style.display = review.text.length > 150 ? 'block' : 'none';
+  
+  readMoreBtn.addEventListener('click', () => {
+    textDiv.classList.toggle('expanded');
+    readMoreBtn.textContent = textDiv.classList.contains('expanded') ? 'کمتر' : 'بیشتر...';
+  });
+  
+  // Pros and cons
+  const prosDiv = document.createElement('div');
+  prosDiv.className = 'review-pros';
+  prosDiv.textContent = review.pros;
+  prosDiv.style.display = review.pros ? 'block' : 'none';
+  
+  const consDiv = document.createElement('div');
+  consDiv.className = 'review-cons';
+  consDiv.textContent = review.cons;
+  consDiv.style.display = review.cons ? 'block' : 'none';
+  
+  // Assemble card
+  card.appendChild(header);
+  card.appendChild(ratingDiv);
+  card.appendChild(textDiv);
+  card.appendChild(readMoreBtn);
+  card.appendChild(prosDiv);
+  card.appendChild(consDiv);
+  
+  return card;
 }
 
 function showNotFound(searchTerm) {

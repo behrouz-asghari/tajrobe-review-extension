@@ -43,10 +43,168 @@ async function fetchSearchData() {
     return cachedData;
   } catch (error) {
     console.error('Error fetching tajrobe data:', error);
-    // Return cached data if available, even if stale
     if (cachedData) return cachedData;
     throw error;
   }
+}
+
+async function fetchCompanyPage(pageUrl) {
+  try {
+    const response = await fetch(pageUrl);
+    if (!response.ok) throw new Error('Failed to fetch company page');
+    
+    const html = await response.text();
+    return parseReviewsFromHTML(html);
+  } catch (error) {
+    console.error('Error fetching company page:', error);
+    return [];
+  }
+}
+
+function parseReviewsFromHTML(html) {
+  const reviews = [];
+  
+  // Split HTML by section tags to find review sections
+  // Each review is in: <section class="c-cardText o-box">...</section>
+  const sectionRegex = /<section\s+class="c-cardText\s+o-box[^"]*"[^>]*>([\s\S]*?)<\/section>/gi;
+  let sectionMatch;
+  
+  while ((sectionMatch = sectionRegex.exec(html)) !== null) {
+    const sectionContent = sectionMatch[1];
+    
+    // Skip company intro section (contains "معرفی شرکت")
+    if (sectionContent.includes('معرفی شرکت')) continue;
+    
+    // Skip review suggestion section
+    if (sectionContent.includes('review-suggest-section')) continue;
+    
+    const review = extractReviewFromSection(sectionContent);
+    if (review && review.text) {
+      reviews.push(review);
+    }
+  }
+  
+  return reviews.slice(0, 10); // Limit to 10 reviews
+}
+
+function extractReviewFromSection(sectionContent) {
+  // Extract job title from: <h4 class="c-cardText-title">...</h4>
+  const titleMatch = sectionContent.match(/<h4\s+class="c-cardText-title"[^>]*>([\s\S]*?)<\/h4>/i);
+  const jobTitle = titleMatch ? titleMatch[1].replace(/<[^>]*>/g, '').trim() : '';
+  
+  // Extract date from: <time class="gray" datetime="...">...</time>
+  const dateMatch = sectionContent.match(/<time\s+class="gray"[^>]*>([\s\S]*?)<\/time>/i);
+  const dateText = dateMatch ? dateMatch[1].trim() : '';
+  
+  // Extract rating from: <div class="rating-upper" style="width: XX%">
+  // XX% of 5 stars = rating
+  let rating = 0;
+  const ratingMatch = sectionContent.match(/<div\s+class="rating-upper"\s+style="width:\s*([\d.]+)%"/i);
+  if (ratingMatch) {
+    const percentage = parseFloat(ratingMatch[1]);
+    rating = Math.round((percentage / 100) * 5);
+  }
+  
+  // Also try to get numeric rating from: <span class="gray">X</span>
+  const numericRatingMatch = sectionContent.match(/<span\s+class="gray">([\d.]+)<\/span>/i);
+  if (numericRatingMatch) {
+    const numRating = parseFloat(numericRatingMatch[1]);
+    if (!isNaN(numRating) && numRating > 0) {
+      rating = numRating;
+    }
+  }
+  
+  // Extract review text from: <div class="c-cardText-body">...</div>
+  const bodyMatch = sectionContent.match(/<div\s+class="c-cardText-body">([\s\S]*?)<\/div>\s*(?:<div\s+class="card-footer|$)/i);
+  let text = '';
+  let pros = '';
+  let cons = '';
+  
+  if (bodyMatch) {
+    const bodyContent = bodyMatch[1];
+    
+    // Extract all <p> tags content
+    const pTagRegex = /<p>([\s\S]*?)<\/p>/gi;
+    let pMatch;
+    const paragraphs = [];
+    
+    while ((pMatch = pTagRegex.exec(bodyContent)) !== null) {
+      paragraphs.push(pMatch[1]);
+    }
+    
+    // Process paragraphs
+    for (const pContent of paragraphs) {
+      const cleanText = pContent.replace(/<[^>]*>/g, '').trim();
+      
+      // Check for pros
+      if (cleanText.includes('مزایا:') || cleanText.includes('مزایا:')) {
+        // Extract from span.label elements
+        const labelRegex = /<span\s+class="label"[^>]*>([\s\S]*?)<\/span>/gi;
+        let labelMatch;
+        const prosList = [];
+        while ((labelMatch = labelRegex.exec(pContent)) !== null) {
+          const label = labelMatch[1].trim();
+          if (label) prosList.push(label);
+        }
+        if (prosList.length > 0) {
+          pros = prosList.join('، ');
+        }
+      }
+      // Check for cons
+      else if (cleanText.includes('معایب:') || cleanText.includes('معایب:')) {
+        const labelRegex = /<span\s+class="label"[^>]*>([\s\S]*?)<\/span>/gi;
+        let labelMatch;
+        const consList = [];
+        while ((labelMatch = labelRegex.exec(pContent)) !== null) {
+          const label = labelMatch[1].trim();
+          if (label) consList.push(label);
+        }
+        if (consList.length > 0) {
+          cons = consList.join('، ');
+        }
+      }
+      // Main review text (not pros/cons, not links)
+      else if (cleanText.length > 20 && !cleanText.includes('پیوند یکتای') && !cleanText.includes('این تجربه')) {
+        text = cleanText;
+      }
+    }
+    
+    // If no text found in paragraphs, try getting all text
+    if (!text) {
+      const allText = bodyContent
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/مزایا:[\s\S]*?(?=معایب:|$)/, '')
+        .replace(/معایب:[\s\S]*?(?=پیوند یکتای|ℹ️|$)/, '')
+        .replace(/پیوند یکتای[\s\S]*/, '')
+        .replace(/ℹ️[\s\S]*/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (allText.length > 20) {
+        text = allText;
+      }
+    }
+  }
+  
+  // Clean up text
+  text = text
+    .replace(/\s+/g, ' ')
+    .replace(/\n+/g, ' ')
+    .trim();
+  
+  // Limit text length
+  if (text.length > 500) {
+    text = text.substring(0, 500) + '...';
+  }
+  
+  return {
+    text: text,
+    rating: rating,
+    date: dateText,
+    jobTitle: jobTitle,
+    pros: pros,
+    cons: cons
+  };
 }
 
 async function searchCompany(searchTerm) {
@@ -55,15 +213,21 @@ async function searchCompany(searchTerm) {
     const result = findCompany(searchTerm, companies);
     
     if (result) {
+      const companyUrl = `https://tajrobe.github.io${result.url}`;
+      
+      // Fetch reviews from company page
+      const reviews = await fetchCompanyPage(companyUrl);
+      
       return {
         found: true,
         company: {
           title: result.title,
           titleEn: result.title_en,
           city: result.city?.trim(),
-          url: `https://tajrobe.github.io${result.url}`,
+          url: companyUrl,
           logo: result.logo,
-          cover: result.cover
+          cover: result.cover,
+          reviews: reviews
         }
       };
     }
@@ -100,11 +264,11 @@ function findCompany(searchTerm, companies) {
   // 3. Search term contains title (for partial matches)
   match = companies.find(c => 
     normalizedSearch.includes(c.title.toLowerCase()) &&
-    c.title.length > 2 // Avoid very short matches
+    c.title.length > 2
   );
   if (match) return match;
   
-  // 4. Partial match on title (title includes search or vice versa)
+  // 4. Partial match on title
   match = companies.find(c => 
     c.title.toLowerCase().includes(normalizedSearch) ||
     normalizedSearch.includes(c.title.toLowerCase())
