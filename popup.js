@@ -1,5 +1,64 @@
 // Popup script - displays company info and reviews from tajrobe.github.io
 
+// Gregorian to Shamsi (Jalali) date converter
+function gregorianToShamsi(gy, gm, gd) {
+  const g_d_m = [0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334];
+  let gy2, days;
+  
+  if (gm > 2) {
+    gy2 = gy + 1;
+  } else {
+    gy2 = gy;
+  }
+  
+  days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100) + Math.floor((gy2 + 399) / 400) + gd + g_d_m[gm - 1];
+  
+  let jy = -1595 + (33 * Math.floor(days / 12053));
+  days %= 12053;
+  jy += 4 * Math.floor(days / 1461);
+  days %= 1461;
+  
+  if (days > 365) {
+    jy += Math.floor((days - 1) / 365);
+    days = (days - 1) % 365;
+  }
+  
+  let jm, jd;
+  
+  if (days < 186) {
+    jm = 1 + Math.floor(days / 31);
+    jd = 1 + (days % 31);
+  } else {
+    jm = 7 + Math.floor((days - 186) / 30);
+    jd = 1 + ((days - 186) % 30);
+  }
+  
+  return { year: jy, month: jm, day: jd };
+}
+
+function convertToShamsi(dateStr) {
+  if (!dateStr) return '';
+  
+  // Try to parse the date string
+  // Format: "December 16, 2025" or similar
+  const dateObj = new Date(dateStr);
+  if (isNaN(dateObj.getTime())) return dateStr;
+  
+  const gy = dateObj.getFullYear();
+  const gm = dateObj.getMonth() + 1;
+  const gd = dateObj.getDate();
+  
+  const shamsi = gregorianToShamsi(gy, gm, gd);
+  
+  // Persian month names
+  const monthNames = [
+    'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
+    'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
+  ];
+  
+  return `${shamsi.day} ${monthNames[shamsi.month - 1]} ${shamsi.year}`;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
   const loadingEl = document.getElementById('loading');
   const errorEl = document.getElementById('error');
@@ -103,10 +162,10 @@ function createReviewCard(review, index) {
   jobTitleDiv.className = 'review-job-title';
   jobTitleDiv.textContent = review.jobTitle || '';
   
-  // Date
+  // Date - convert to Shamsi
   const dateSpan = document.createElement('span');
   dateSpan.className = 'review-date';
-  dateSpan.textContent = review.date || '';
+  dateSpan.textContent = convertToShamsi(review.date);
   
   header.appendChild(jobTitleDiv);
   header.appendChild(dateSpan);
