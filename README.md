@@ -65,7 +65,9 @@ A Chrome extension that displays company reviews and registration information wh
 |-------|---------|
 | ✓ (Green) | Company found in Tajrobe database |
 | ✗ (Red) | Company not found in Tajrobe database |
-| (Empty) | Not on a company page |
+| (Empty) | Not on a company page or left company page |
+
+> **Note:** The badge automatically clears when you navigate away from a company page or switch to a different tab.
 
 ## Permissions
 
