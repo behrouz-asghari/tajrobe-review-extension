@@ -17,7 +17,7 @@ A Chrome extension that displays company reviews and registration information wh
 ## Community Recognition
 This extension is officially featured on the [Tajrobe project page](https://tajrobe.github.io/browser-extension/) as a recommended utility. It is recognized as a community-driven tool that integrates authentic employee reviews directly into job search platforms to assist developers and professionals in making informed career decisions.
 
-<img width="1920" height="5308" alt="screencapture-jobvision-ir-my-cv-2026-07-13-13_32_37" src="https://github.com/user-attachments/assets/efeec3da-4829-40d0-a35b-c3785e7d0971" />
+<img width="1920" height="1108" alt="screencapture-tajrobe-github-io-browser-extension-2026-07-14-21_23_20" src="https://github.com/user-attachments/assets/e654a039-49ff-437f-8e9d-f96b56ab0740" />
 
 ## Installation
 
