@@ -21,14 +21,27 @@ This extension is officially featured on the [Tajrobe project page](https://tajr
 
 ## Installation
 
-### From Source (Developer Mode)
+### Option 1: From GitHub Releases (Recommended)
 
-1. Clone or download this repository
+1. Go to the [Releases](../../releases) page
+2. Download the latest `vX.X.X.zip`
+3. Extract the zip file to a folder on your computer
+4. Open Chrome and navigate to `chrome://extensions/`
+5. Enable **Developer mode** (toggle in top-right corner)
+6. Click **Load unpacked**
+7. Select the extracted folder
+8. The extension icon will appear in your toolbar
+
+### Option 2: From Source (Developer)
+
+1. Clone this repository:
+   ```
+   git clone https://github.com/behrouz-asghari/tajrobe-review-extension.git
+   ```
 2. Open Chrome and navigate to `chrome://extensions/`
-3. Enable **Developer mode** (toggle in top right)
+3. Enable **Developer mode**
 4. Click **Load unpacked**
-5. Select the `company-review-extension` folder
-6. The extension icon will appear in your toolbar
+5. Select the cloned repository folder
 
 ## Usage
 
