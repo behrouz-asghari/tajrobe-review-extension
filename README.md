@@ -6,6 +6,10 @@
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)](https://developer.chrome.com/docs/extensions/develop/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![CI](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/codeql.yml/badge.svg)](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/behrouz-asghari/tajrobe-review-extension/badge)](https://securityscorecards.dev/viewer/?uri=github.com/behrouz-asghari/tajrobe-review-extension)
+
 
 A Chrome extension that displays company reviews and registration information when browsing job listings on [JobVision](https://jobvision.ir) and [Jobinja](https://jobinja.ir).
 
@@ -103,6 +107,14 @@ This extension is officially featured on the [Tajrobe project page](https://tajr
 - `tabs` - Monitor tab navigation
 - `storage` - Cache company data
 - Host permissions for Tajrobe, JobVision, Jobinja, and Linka.ir APIs
+
+## Security & Trust
+
+This extension is open source and available for public review. It requests only the minimum Chrome permissions needed to work and uses automated checks such as GitHub Actions and CodeQL to improve transparency and trust.
+
+## Privacy
+
+This extension does not intentionally collect passwords, keystrokes, or unnecessary personal data. Stored data is limited to local settings and cache.
 
 ## Development
 

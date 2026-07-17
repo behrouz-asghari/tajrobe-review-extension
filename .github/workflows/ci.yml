@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate manifest.json
+        run: |
+          python - <<'PY'
+          import json
+          with open('manifest.json', 'r', encoding='utf-8') as f:
+              json.load(f)
+          print('manifest.json is valid JSON')
+          PY
+
+      - name: Check required extension files
+        run: |
+          test -f manifest.json
+          test -f background.js
+          test -f content.js
+          test -f popup.html
+          test -f popup.css
+          test -f popup.js
+
+      - name: Check JavaScript syntax
+        run: |
+          node --check background.js
+          node --check content.js
+          node --check popup.js
