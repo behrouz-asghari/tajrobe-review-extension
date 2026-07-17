@@ -6,8 +6,8 @@
 [![Chrome Extension](https://img.shields.io/badge/Chrome-Extension-blue?logo=googlechrome&logoColor=white)](https://developer.chrome.com/docs/extensions/)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)](https://developer.chrome.com/docs/extensions/develop/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/ci.yml/badge.svg)](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/ci.yml)
-[![CodeQL](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/codeql.yml/badge.svg)](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/codeql.yml)
+[![CI](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/behrouz-asghari/tajrobe-review-extension/actions/workflows/codeql.yml)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/behrouz-asghari/tajrobe-review-extension/badge)](https://securityscorecards.dev/viewer/?uri=github.com/behrouz-asghari/tajrobe-review-extension)
 
 
