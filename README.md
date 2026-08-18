@@ -23,6 +23,8 @@ A Chrome extension that displays company reviews and registration information wh
 - **Auto-detect company pages** on JobVision and Jobinja
 - **Fetch work experience reviews** from [Tajrobe](https://tajrobe.github.io)
 - **Display company registration info** from [Linka.ir](https://linka.ir) API
+- **Knowledge-based company detection** - Check if company is registered in [Danesh Bonyan](https://daneshbonyan.ir) system
+- **Name similarity matching** - Shows percentage match between searched name and results
 - **Exact name matching badge** - Shows ✅ when company names match exactly
 - **Persian date conversion** - Displays dates in Shamsi (Jalali) calendar
 - **RTL support** - Full Persian/Farsi interface
@@ -69,6 +71,7 @@ This extension is officially featured on the [Tajrobe project page](https://tajr
    - Company info from Tajrobe
    - Work experience reviews with ratings
    - Company registration details from Linka.ir
+   - Knowledge-based company status from Danesh Bonyan
 
 ## How It Works
 
@@ -85,11 +88,13 @@ This extension is officially featured on the [Tajrobe project page](https://tajr
 |--------|-----------|
 | [Tajrobe](https://tajrobe.github.io) | Work experience reviews, company ratings |
 | [Linka.ir](https://linka.ir) | Company registration info, national ID, logo |
+| [Danesh Bonyan](https://daneshbonyan.ir) | Knowledge-based company status, technology zone, approval date |
 
 ### API Endpoints
 
 - **Tajrobe**: `https://tajrobe.github.io/assets/search.json`
 - **Linka**: `https://api.linka.ir/Api/V1/Site/SuggestionSearch?search={name}&typeId=2`
+- **Danesh Bonyan**: `https://api.daneshbonyan.ir/kb-co-pub-info/list` (POST with `{term: companyName}`)
 
 ## Badge Indicators
 
@@ -101,12 +106,58 @@ This extension is officially featured on the [Tajrobe project page](https://tajr
 
 > **Note:** The badge automatically clears when you navigate away from a company page or switch to a different tab.
 
+## Danesh Bonyan Integration
+
+This extension integrates with the [Danesh Bonyan](https://daneshbonyan.ir) API to check if a company is registered as a knowledge-based company in Iran.
+
+### Displayed Information
+
+| Field | Description |
+|-------|-------------|
+| **Company Name** | Official name of the company |
+| **Match Percentage** | How similar the searched name is to the result (e.g., 85%) |
+| **Status** | Knowledge-based status: فناور (Technology), نوآور (Innovative), نوپا (Startup) |
+| **National ID** | Company's national identification number |
+| **Province** | Company's location province |
+| **Technology Zone** | Assigned technology zone category |
+| **Approval Date** | Date of approval in Shamsi calendar |
+| **Phone Number** | Office phone (only shown for exact name matches) |
+
+### How It Works
+
+1. When you open the extension on a company page, it automatically searches the Danesh Bonyan database
+2. Results are displayed below the Linka.ir section
+3. Each result shows a match percentage badge:
+   - 🟢 **Exact Match (100%)** - Green badge with ✅
+   - 🟡 **Partial Match (<100%)** - Yellow badge with percentage
+4. Phone numbers are only displayed for companies with exact name matches
+
+> **Note:** The Danesh Bonyan search runs independently of the Tajrobe search, so you can see knowledge-based status even if the company isn't found in Tajrobe's database.
+
 ## Permissions
 
-- `activeTab` - Access current tab
-- `tabs` - Monitor tab navigation
-- `storage` - Cache company data
-- Host permissions for Tajrobe, JobVision, Jobinja, and Linka.ir APIs
+The extension uses the minimum permissions required for company detection, API access, and UI updates.
+
+- `activeTab` - Access the currently open company page
+- `tabs` - Detect tab changes and clear/update badge state
+- `storage` - Cache company data and temporary results
+- `host_permissions` - Access external data sources:
+  - `https://tajrobe.github.io/*`
+  - `https://jobvision.ir/*`
+  - `https://jobinja.ir/*`
+  - `https://api.linka.ir/*`
+  - `https://api.daneshbonyan.ir/*`
+
+### Why background requests are used for Danesh Bonyan
+
+The Danesh Bonyan public API is protected by CORS and only allows browser requests from its own allowed origin(s), such as:
+
+- `https://pub.daneshbonyan.ir`
+
+Because of this, direct `fetch()` calls from extension UI contexts such as the popup, side panel, or content scripts may be blocked by the browser with a CORS error.
+
+To avoid this, Danesh Bonyan API requests are executed from the extension's background service worker, which is the recommended Chrome Extension MV3 pattern for cross-origin requests.
+
 
 ## Security & Trust
 
@@ -152,5 +203,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Tajrobe](https://tajrobe.github.io) - Work experience sharing platform
 - [Linka.ir](https://linka.ir) - Iranian company registration database
+- [Danesh Bonyan](https://daneshbonyan.ir) - Knowledge-based companies database
 - [JobVision](https://jobvision.ir) - Job listing platform
 - [Jobinja](https://jobinja.ir) - Job listing platform

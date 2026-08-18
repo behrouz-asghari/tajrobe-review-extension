@@ -423,3 +423,103 @@ body {
 .footer a:hover {
   text-decoration: underline;
 }
+
+/* Danesh Bonyan Section */
+.danesh-bonyan-section {
+  margin-bottom: 16px;
+}
+
+.danesh-bonyan-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #333;
+}
+
+.danesh-bonyan-subtitle {
+  font-size: 9px;
+  font-weight: 600;
+  color: #1565c0;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.danesh-bonyan-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.danesh-bonyan-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border-right: 3px solid #1565c0;
+}
+
+.danesh-bonyan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed #e0e0e0;
+}
+
+.danesh-bonyan-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  flex: 1;
+}
+
+.danesh-bonyan-match-badge {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 8px;
+  white-space: nowrap;
+}
+
+.danesh-bonyan-match-badge.exact-match {
+  background: #4CAF50;
+  color: white;
+}
+
+.danesh-bonyan-match-badge.partial-match {
+  background: #FFC107;
+  color: #333;
+}
+
+.danesh-bonyan-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.danesh-bonyan-info-item {
+  display: flex;
+  flex-direction: column;
+  padding: 6px 8px;
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.danesh-bonyan-label {
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 2px;
+}
+
+.danesh-bonyan-value {
+  font-size: 11px;
+  color: #333;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.danesh-bonyan-info-item:nth-child(1) {
+  grid-column: span 2;
+}

@@ -7,9 +7,34 @@ const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
 // Helper function to check if URL is a company page
 function isCompanyPage(url) {
   if (!url) return false;
-  return /jobvision\.ir\/companies\//.test(url) || 
+  return /jobvision\.ir\/companies\//.test(url) ||
          /jobinja\.ir\/companies\//.test(url);
 }
+// background.js
+
+chrome.runtime.onInstalled.addListener(() => {
+  const RULE_ID = 1;
+  chrome.declarativeNetRequest.updateDynamicRules({
+    removeRuleIds: [RULE_ID],
+    addRules: [
+      {
+        id: RULE_ID,
+        priority: 1,
+        action: {
+          type: 'modifyHeaders',
+          requestHeaders: [
+            { header: 'Origin', operation: 'set', value: 'https://pub.daneshbonyan.ir' },
+            { header: 'Referer', operation: 'set', value: 'https://pub.daneshbonyan.ir/' }
+          ]
+        },
+        condition: {
+          urlFilter: 'https://api.daneshbonyan.ir/*',
+          resourceTypes: ['xmlhttprequest']
+        }
+      }
+    ]
+  });
+});
 
 // Listen for tab updates to clear badge when leaving company pages
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
@@ -43,13 +68,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       .then(result => sendResponse(result));
     return true; // Keep message channel open for async response
   }
-  
+
   if (message.type === 'SEARCH_LINKA') {
     searchLinkaAPI(message.companyName)
       .then(result => sendResponse(result));
     return true;
   }
-  
+
+  if (message.type === 'SEARCH_DANESH_BONYAN') {
+    searchDaneshBonyanAPI(message.companyName)
+      .then(result => sendResponse(result));
+    return true;
+  }
+
   if (message.type === 'COMPANY_FOUND') {
     // Store the company info for popup to retrieve
     chrome.storage.local.set({
@@ -60,11 +91,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         timestamp: Date.now()
       }
     });
-    
+
     // Update badge
     updateBadge(message.companyName);
   }
-  
+
   if (message.type === 'CLEAR_BADGE') {
     // Clear badge when not on a company page
     chrome.action.setBadgeText({ text: '' });
@@ -78,11 +109,11 @@ async function fetchSearchData() {
   if (cachedData && cacheTimestamp && (Date.now() - cacheTimestamp < CACHE_DURATION)) {
     return cachedData;
   }
-  
+
   try {
     const response = await fetch('https://tajrobe.github.io/assets/search.json');
     if (!response.ok) throw new Error('Failed to fetch data');
-    
+
     cachedData = await response.json();
     cacheTimestamp = Date.now();
     return cachedData;
@@ -97,7 +128,7 @@ async function fetchCompanyPage(pageUrl) {
   try {
     const response = await fetch(pageUrl);
     if (!response.ok) throw new Error('Failed to fetch company page');
-    
+
     const html = await response.text();
     return parseReviewsFromHTML(html);
   } catch (error) {
@@ -222,13 +253,13 @@ async function searchCompany(searchTerm) {
   try {
     const companies = await fetchSearchData();
     const result = findCompany(searchTerm, companies);
-    
+
     if (result) {
       const companyUrl = `https://tajrobe.github.io${result.url}`;
-      
+
       // Fetch reviews from company page
       const reviews = await fetchCompanyPage(companyUrl);
-      
+
       return {
         found: true,
         company: {
@@ -242,7 +273,7 @@ async function searchCompany(searchTerm) {
         }
       };
     }
-    
+
     return {
       found: false,
       searchTerm: searchTerm,
@@ -259,46 +290,46 @@ async function searchCompany(searchTerm) {
 
 function findCompany(searchTerm, companies) {
   const normalizedSearch = searchTerm.toLowerCase().trim();
-  
+
   // 1. Exact match on title
-  let match = companies.find(c => 
+  let match = companies.find(c =>
     c.title.toLowerCase() === normalizedSearch
   );
   if (match) return match;
-  
+
   // 2. Title starts with search term
-  match = companies.find(c => 
+  match = companies.find(c =>
     c.title.toLowerCase().startsWith(normalizedSearch)
   );
   if (match) return match;
-  
+
   // 3. Search term contains title (for partial matches)
-  match = companies.find(c => 
+  match = companies.find(c =>
     normalizedSearch.includes(c.title.toLowerCase()) &&
     c.title.length > 2
   );
   if (match) return match;
-  
+
   // 4. Partial match on title
-  match = companies.find(c => 
+  match = companies.find(c =>
     c.title.toLowerCase().includes(normalizedSearch) ||
     normalizedSearch.includes(c.title.toLowerCase())
   );
   if (match) return match;
-  
+
   // 5. Match on English name (title_en)
-  match = companies.find(c => 
+  match = companies.find(c =>
     c.title_en && c.title_en.toLowerCase().includes(normalizedSearch)
   );
   if (match) return match;
-  
+
   // 6. Search term words match title words
   const searchWords = normalizedSearch.split(/\s+/);
   match = companies.find(c => {
     const titleLower = c.title.toLowerCase();
     return searchWords.every(word => titleLower.includes(word));
   });
-  
+
   return match || null;
 }
 
@@ -322,16 +353,16 @@ async function searchLinkaAPI(companyName) {
   try {
     const rnd = Math.floor(100 + Math.random() * 900); // 3-digit random number
     const url = `https://api.linka.ir/Api/V1/Site/SuggestionSearch?search=${encodeURIComponent(companyName)}&typeId=2&rnd=${rnd}`;
-    
+
     const response = await fetch(url);
     if (!response.ok) throw new Error('Failed to fetch Linka data');
-    
+
     const data = await response.json();
-    
+
     if (data.success && data.data && data.data.length > 0) {
       // Filter only typeId: 2 (companies), exclude typeId: 1 (individuals)
       const companiesOnly = data.data.filter(item => item.typeId === 2);
-      
+
       return {
         success: true,
         companies: companiesOnly.map(item => ({
@@ -343,10 +374,50 @@ async function searchLinkaAPI(companyName) {
         }))
       };
     }
-    
+
     return { success: true, companies: [] };
   } catch (error) {
     console.error('Error searching Linka API:', error);
     return { success: false, error: error.message, companies: [] };
+  }
+}
+
+// Search Danesh Bonyan API for knowledge-based company info
+async function searchDaneshBonyanAPI(companyName) {
+  try {
+    const url = 'https://api.daneshbonyan.ir/kb-co-pub-info/list?page=0&pageSize=10';
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ term: companyName })
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch Danesh Bonyan data');
+
+    const data = await response.json();
+
+    if (data.succeeded && data.returnValue && data.returnValue.length > 0) {
+      return {
+        success: true,
+        companies: data.returnValue.map(item => ({
+          coName: item.coName,
+          nationalId: item.nationalId,
+          coStateTitle: item.coStateTitle,
+          provinceTitle: item.provinceTitle,
+          technologyZoneTypeTitle: item.technologyZoneTypeTitle,
+          confirmDate: item.confirmDate,
+          officePhoneNumber: item.officePhoneNumber
+        })),
+        totalRecords: data.totalRecords
+      };
+    }
+
+    return { success: true, companies: [], totalRecords: 0 };
+  } catch (error) {
+    console.error('Error searching Danesh Bonyan API:', error);
+    return { success: false, error: error.message, companies: [], totalRecords: 0 };
   }
 }

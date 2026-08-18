@@ -105,7 +105,15 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (linkaResult.success && linkaResult.companies) {
         showLinkaResults(linkaResult.companies, lastCompany.name);
       }
-    } else {
+    }
+
+    // Search Danesh Bonyan API for knowledge-based company info (independent of tajrobe result)
+    const daneshBonyanResult = await searchDaneshBonyanAPI(lastCompany.name);
+    if (daneshBonyanResult.success && daneshBonyanResult.companies) {
+      showDaneshBonyanResults(daneshBonyanResult.companies, lastCompany.name);
+    }
+
+    if (!result.found) {
       showNotFound(lastCompany.name);
     }
   } catch (error) {
@@ -280,6 +288,21 @@ async function searchLinkaAPI(companyName) {
   });
 }
 
+async function searchDaneshBonyanAPI(companyName) {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage(
+      { type: 'SEARCH_DANESH_BONYAN', companyName: companyName },
+      (response) => {
+        if (chrome.runtime.lastError) {
+          reject(new Error(chrome.runtime.lastError.message));
+        } else {
+          resolve(response);
+        }
+      }
+    );
+  });
+}
+
 function showLinkaResults(companies, searchTerm) {
   const linkaSection = document.getElementById('linka-section');
   const linkaList = document.getElementById('linka-list');
@@ -342,4 +365,136 @@ function showLinkaResults(companies, searchTerm) {
   });
 
   linkaSection.style.display = 'block';
+}
+
+function showDaneshBonyanResults(companies, searchTerm) {
+  const daneshBonyanSection = document.getElementById('danesh-bonyan-section');
+  const daneshBonyanList = document.getElementById('danesh-bonyan-list');
+
+  if (!companies || companies.length === 0) {
+    daneshBonyanSection.style.display = 'none';
+    return;
+  }
+
+  daneshBonyanList.innerHTML = '';
+
+  companies.forEach(company => {
+    const card = document.createElement('div');
+    card.className = 'danesh-bonyan-card';
+
+    // Calculate name similarity
+    const similarity = calculateNameSimilarity(searchTerm, company.coName);
+    const isExactMatch = searchTerm &&
+      company.coName.trim().toLowerCase() === searchTerm.trim().toLowerCase();
+
+    // Company name header
+    const header = document.createElement('div');
+    header.className = 'danesh-bonyan-header';
+
+    const nameEl = document.createElement('div');
+    nameEl.className = 'danesh-bonyan-name';
+    nameEl.textContent = company.coName;
+
+    const matchBadge = document.createElement('div');
+    matchBadge.className = 'danesh-bonyan-match-badge';
+    if (isExactMatch) {
+      matchBadge.classList.add('exact-match');
+      matchBadge.textContent = `مطابقت %100 ✅`;
+    } else {
+      matchBadge.classList.add('partial-match');
+      matchBadge.textContent = `مطابقت ${similarity}%`;
+    }
+
+    header.appendChild(nameEl);
+    header.appendChild(matchBadge);
+
+    // Info grid
+    const infoGrid = document.createElement('div');
+    infoGrid.className = 'danesh-bonyan-info-grid';
+
+    // Knowledge-based status
+    const statusItem = createInfoItem('وضعیت', company.coStateTitle);
+    infoGrid.appendChild(statusItem);
+
+    // National ID
+    const nationalIdItem = createInfoItem('شناسه ملی', company.nationalId);
+    infoGrid.appendChild(nationalIdItem);
+
+    // Province
+    const provinceItem = createInfoItem('استان', company.provinceTitle);
+    infoGrid.appendChild(provinceItem);
+
+    // Technology Zone
+    const techItem = createInfoItem('حوزه فناوری', company.technologyZoneTypeTitle);
+    infoGrid.appendChild(techItem);
+
+    // Confirmation Date
+    const dateItem = createInfoItem('تاریخ تایید', company.confirmDate);
+    infoGrid.appendChild(dateItem);
+
+    // Phone number - only show for exact match
+    if (isExactMatch && company.officePhoneNumber) {
+      const phoneItem = createInfoItem('شماره تماس', company.officePhoneNumber);
+      infoGrid.appendChild(phoneItem);
+    }
+
+    card.appendChild(header);
+    card.appendChild(infoGrid);
+    daneshBonyanList.appendChild(card);
+  });
+
+  daneshBonyanSection.style.display = 'block';
+}
+
+function createInfoItem(label, value) {
+  const item = document.createElement('div');
+  item.className = 'danesh-bonyan-info-item';
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'danesh-bonyan-label';
+  labelEl.textContent = label + ':';
+
+  const valueEl = document.createElement('span');
+  valueEl.className = 'danesh-bonyan-value';
+  valueEl.textContent = value || '-';
+
+  item.appendChild(labelEl);
+  item.appendChild(valueEl);
+
+  return item;
+}
+
+function calculateNameSimilarity(searchTerm, companyName) {
+  if (!searchTerm || !companyName) return 0;
+
+  const normalizedSearch = searchTerm.trim().toLowerCase();
+  const normalizedCompany = companyName.trim().toLowerCase();
+
+  // Exact match
+  if (normalizedSearch === normalizedCompany) return 100;
+
+  // Check if one contains the other
+  if (normalizedCompany.includes(normalizedSearch)) {
+    return Math.round((normalizedSearch.length / normalizedCompany.length) * 100);
+  }
+  if (normalizedSearch.includes(normalizedCompany)) {
+    return Math.round((normalizedCompany.length / normalizedSearch.length) * 100);
+  }
+
+  // Calculate word overlap
+  const searchWords = normalizedSearch.split(/\s+/);
+  const companyWords = normalizedCompany.split(/\s+/);
+
+  let matchedWords = 0;
+  searchWords.forEach(word => {
+    if (companyWords.some(cw => cw.includes(word) || word.includes(cw))) {
+      matchedWords++;
+    }
+  });
+
+  if (searchWords.length > 0) {
+    return Math.round((matchedWords / searchWords.length) * 100);
+  }
+
+  return 0;
 }

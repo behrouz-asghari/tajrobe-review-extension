@@ -6,7 +6,9 @@
   "permissions": [
     "activeTab",
     "tabs",
-    "storage"
+    "storage",
+        "declarativeNetRequest"
+
   ],
   "host_permissions": [
     "https://tajrobe.github.io/*",
@@ -14,7 +16,9 @@
     "https://www.jobvision.ir/*",
     "https://jobinja.ir/*",
     "https://www.jobinja.ir/*",
-    "https://api.linka.ir/*"
+    "https://api.linka.ir/*",
+        "https://api.daneshbonyan.ir/*"
+
   ],
   "action": {
     "default_popup": "popup.html",
