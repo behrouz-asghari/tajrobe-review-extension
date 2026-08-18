@@ -15,6 +15,7 @@ A Chrome extension that displays company reviews and registration information wh
 
 <img width="1323" height="992" alt="Screenshot 2026-07-09 012914" src="https://github.com/user-attachments/assets/6b36ea65-7cdc-4760-9994-9ec2a3d437f3" />
 <img width="1318" height="938" alt="Screenshot 2026-07-17 105335" src="https://github.com/user-attachments/assets/044ae9a6-796c-4f63-8f8d-5b0c75f7c888" />
+<img width="1276" height="944" alt="Screenshot 2026-08-18 144233" src="https://github.com/user-attachments/assets/c3c8a098-6de3-4923-9c3b-57e0c9ca435f" />
 
 </div>
 
