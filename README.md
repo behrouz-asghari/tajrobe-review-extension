@@ -32,7 +32,7 @@ A Chrome extension that displays company reviews and registration information wh
 - **Badge indicators** - Shows checkmark (✓) or cross (✗) on extension icon
 
 ## Community Recognition
-This extension is officially featured on the [Tajrobe project page](https://tajrobe.github.io/browser-extension/) as a recommended utility. It is recognized as a community-driven tool that integrates authentic employee reviews directly into job search platforms to assist developers and professionals in making informed career decisions.
+This extension is officially featured on the [Tajrobe project page](https://tajrobe.github.io/browser-extension/) as a recommended utility. It is recognized as a community-driven tool that integrates authentic employee reviews directly into job search platforms to assist developers and professionals in making informed career decisions.See the [DISCLAIMER](DISCLAIMER.md) ⚠️
 
 <img width="1920" height="1108" alt="screencapture-tajrobe-github-io-browser-extension-2026-07-14-21_23_20" src="https://github.com/user-attachments/assets/e654a039-49ff-437f-8e9d-f96b56ab0740" />
 
