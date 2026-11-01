@@ -1,14 +1,14 @@
 {
   "manifest_version": 3,
   "name": "تجربه کاری شرکت‌ها",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "مشاهده تجربه‌های کاری شرکت‌ها از tajrobe.github.io هنگام بازدید از جاب‌ویژن و جابینجا",
   "permissions": [
     "activeTab",
     "tabs",
     "storage",
-        "declarativeNetRequest"
-
+    "declarativeNetRequest",
+    "sidePanel"
   ],
   "host_permissions": [
     "https://tajrobe.github.io/*",
@@ -20,6 +20,9 @@
         "https://api.daneshbonyan.ir/*"
 
   ],
+  "side_panel": {
+    "default_path": "popup.html"
+  },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {

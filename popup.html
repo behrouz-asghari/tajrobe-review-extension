@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>تجربه کاری شرکت‌ها</title>
   <link rel="stylesheet" href="popup.css">
 </head>
@@ -10,9 +11,15 @@
   <div class="container">
     <header class="header">
       <h1 class="title">تجربه‌های کاری</h1>
-      <a href="https://tajrobe.github.io" target="_blank" class="logo-link">
-        <span class="logo-text">tajrobe.github.io</span>
-      </a>
+      <div class="header-actions">
+        <button id="side-panel-toggle" class="side-panel-toggle" type="button" aria-pressed="false" title="باز شدن افزونه در نوار کناری مرورگر">
+          <span class="side-panel-icon" aria-hidden="true">▥</span>
+          <span class="side-panel-label">نوار کناری</span>
+        </button>
+        <a href="https://tajrobe.github.io" target="_blank" class="logo-link">
+          <span class="logo-text">tajrobe.github.io</span>
+        </a>
+      </div>
     </header>
 
     <div id="loading" class="loading">
@@ -30,7 +37,12 @@
     </div>
 
     <div id="result" class="result" style="display: none;">
-      <div class="company-card">
+      <div id="match-status" class="match-status loading">
+        <span id="match-status-icon" class="match-status-icon">…</span>
+        <span id="match-status-text" class="match-status-text">در حال جستجوی تجربه‌های کاری…</span>
+      </div>
+
+      <div id="company-card" class="company-card">
         <div id="company-logo" class="company-logo" style="display: none;">
           <img id="logo-img" src="" alt="لوگو">
         </div>
@@ -41,37 +53,91 @@
         </div>
       </div>
 
-      <div id="reviews-section" class="reviews-section" style="display: none;">
-        <h3 class="reviews-title">نظرات کاربران</h3>
-        <div id="reviews-list" class="reviews-list"></div>
+      <div id="reviews-section" class="reviews-section">
+        <div class="section-header">
+          <h3 class="reviews-title">نظرات کاربران</h3>
+          <button id="refresh-btn" class="refresh-btn" type="button" title="دریافت مجدد اطلاعات">
+            <span class="refresh-icon">↻</span>
+            <span class="refresh-text">بروزرسانی</span>
+          </button>
+        </div>
+
+        <div id="rating-summary" class="rating-summary" style="display: none;">
+          <div class="rating-summary-item">
+            <span id="review-count" class="rating-summary-value">0</span>
+            <span class="rating-summary-label">تجربه ثبت‌شده</span>
+            <span id="latest-review-date" class="rating-summary-date"></span>
+          </div>
+          <div class="rating-summary-item">
+            <span id="average-rating" class="rating-summary-value rating-summary-average">0.0</span>
+            <div id="rating-stars" class="rating-stars" role="img" aria-label="میانگین امتیاز">
+              <span class="rating-stars-track">★★★★★</span>
+              <span id="rating-stars-fill" class="rating-stars-fill" style="width: 0%;">★★★★★</span>
+            </div>
+            <span class="rating-summary-label">میانگین امتیاز از ۵</span>
+          </div>
+        </div>
+
+        <div id="rating-skeleton" class="rating-summary">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+
+        <p id="reviews-empty" class="reviews-empty" style="display: none;">هنوز تجربه‌ای برای این شرکت ثبت نشده است</p>
+
+        <div class="actions reviews-actions" style="display: none;">
+          <a id="company-link" href="" target="_blank" class="btn btn-primary">
+            مشاهده همه نظرات در تجربه
+          </a>
+        </div>
       </div>
 
-      <div id="linka-section" class="linka-section" style="display: none;">
+      <div id="linka-section" class="linka-section">
         <h3 class="linka-title">اطلاعات ثبتی با احتمال ارتباط با این شرکت</h3>
         <p class="linka-subtitle">لطفا با دقت بررسی شود این لیست پیشنهادی صرفا بر اساس نام/برند است</p>
         <div id="linka-list" class="linka-list"></div>
+        <div id="linka-skeleton" class="skeleton-list">
+          <div class="skeleton-row">
+            <span class="skeleton-avatar"></span>
+            <span class="skeleton-lines">
+              <span class="skeleton-line"></span>
+              <span class="skeleton-line short"></span>
+            </span>
+          </div>
+          <div class="skeleton-row">
+            <span class="skeleton-avatar"></span>
+            <span class="skeleton-lines">
+              <span class="skeleton-line"></span>
+              <span class="skeleton-line short"></span>
+            </span>
+          </div>
+        </div>
+        <p id="linka-error" class="section-error" style="display: none;">دریافت اطلاعات ثبتی ممکن نشد</p>
       </div>
 
-      <div id="danesh-bonyan-section" class="danesh-bonyan-section" style="display: none;">
+      <div id="danesh-bonyan-section" class="danesh-bonyan-section">
         <h3 class="danesh-bonyan-title">وضعیت دانش‌بنیان شرکت</h3>
         <p class="danesh-bonyan-subtitle">بررسی ثبت‌نام در سامانه شرکت‌های دانش‌بنیان</p>
         <div id="danesh-bonyan-list" class="danesh-bonyan-list"></div>
+        <div id="danesh-skeleton" class="skeleton-list">
+          <div class="skeleton-row">
+            <span class="skeleton-lines">
+              <span class="skeleton-line"></span>
+              <span class="skeleton-line short"></span>
+            </span>
+          </div>
+        </div>
+        <p id="danesh-error" class="section-error" style="display: none;">دریافت اطلاعات دانش‌بنیان ممکن نشد</p>
       </div>
 
-      <div class="actions">
-        <a id="company-link" href="" target="_blank" class="btn btn-primary">
-          مشاهده همه نظرات در تجربه
-        </a>
-      </div>
-    </div>
-
-    <div id="not-found" class="not-found" style="display: none;">
-      <p class="not-found-title">شرکت یافت نشد</p>
-      <p id="search-term" class="search-term"></p>
-      <div class="actions">
-        <a id="search-link" href="" target="_blank" class="btn btn-secondary">
-          جستجو در تجربه
-        </a>
+      <div id="not-found" class="not-found" style="display: none;">
+        <p class="not-found-title">شرکت یافت نشد</p>
+        <p id="search-term" class="search-term"></p>
+        <div class="actions">
+          <a id="search-link" href="" target="_blank" class="btn btn-secondary">
+            جستجو در تجربه
+          </a>
+        </div>
       </div>
     </div>
 

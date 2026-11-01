@@ -14,6 +14,28 @@ body {
   overflow-y: auto;
 }
 
+/*
+ * The action popup is exactly 380px wide (Chrome sizes it from the body width),
+ * so viewport units must never be used on the body there. These rules only
+ * adapt the layout to the wider/taller browser side panel.
+ */
+@media (min-width: 420px) {
+  body {
+    width: 100%;
+  }
+
+  .container {
+    max-width: 640px;
+    margin: 0 auto;
+  }
+}
+
+@media (min-height: 620px) {
+  body {
+    max-height: none;
+  }
+}
+
 .container {
   padding: 16px;
 }
@@ -44,6 +66,43 @@ body {
 
 .logo-text:hover {
   color: #1976d2;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.side-panel-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #d5e4f5;
+  border-radius: 6px;
+  background: #eef4fb;
+  color: #1976d2;
+  font-family: inherit;
+  font-size: 11px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.side-panel-toggle:hover {
+  background: #e2eefb;
+}
+
+.side-panel-toggle[aria-pressed="true"] {
+  background: #1976d2;
+  border-color: #1976d2;
+  color: white;
+}
+
+.side-panel-icon {
+  font-size: 12px;
+  line-height: 1;
 }
 
 .loading {
@@ -137,65 +196,239 @@ body {
   color: #666;
 }
 
+/* Match status banner */
+.match-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+
+.match-status-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  color: inherit;
+}
+
+.match-status.loading {
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.match-status.found {
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.match-status.weak {
+  background: #fff8e1;
+  color: #8a6d00;
+}
+
+.match-status.none {
+  background: #ffebee;
+  color: #b71c1c;
+}
+
 /* Reviews Section */
 .reviews-section {
   margin-bottom: 16px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .reviews-title {
   font-size: 14px;
   font-weight: 600;
   color: #333;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid #e0e0e0;
 }
 
-.reviews-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.refresh-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border: 1px solid #d5e4f5;
+  border-radius: 6px;
+  background: #eef4fb;
+  color: #1976d2;
+  font-family: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
 
-.review-card {
+.refresh-btn:hover {
+  background: #e2eefb;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.refresh-icon {
+  font-size: 13px;
+  line-height: 1;
+  display: inline-block;
+}
+
+.reviews-empty {
+  font-size: 12px;
+  color: #888;
   background: white;
   border-radius: 8px;
   padding: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-  border-right: 3px solid #1976d2;
+  text-align: center;
 }
 
-.review-job-title {
-  font-size: 12px;
-  font-weight: 500;
-  color: #1976d2;
-  margin-bottom: 4px;
+.section-error {
+  font-size: 11px;
+  color: #b71c1c;
+  background: #fff5f5;
+  border-radius: 6px;
+  padding: 8px 10px;
 }
 
-.review-header {
+/* Loading skeletons */
+.skeleton-card {
+  height: 70px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ececec 25%, #f7f7f7 37%, #ececec 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skeleton-list {
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-row {
+  display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  gap: 10px;
+  background: white;
+  border-radius: 8px;
+  padding: 10px;
 }
 
-.review-rating {
+.skeleton-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #ececec 25%, #f7f7f7 37%, #ececec 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+
+.skeleton-lines {
+  flex: 1;
   display: flex;
-  gap: 2px;
+  flex-direction: column;
+  gap: 6px;
 }
 
-.star {
-  color: #ffc107;
-  font-size: 12px;
+.skeleton-line {
+  height: 10px;
+  border-radius: 5px;
+  background: linear-gradient(90deg, #ececec 25%, #f7f7f7 37%, #ececec 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
 }
 
-.star.empty {
+.skeleton-line.short {
+  width: 55%;
+}
+
+@keyframes shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.rating-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.rating-summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: white;
+  border-radius: 8px;
+  padding: 12px 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+}
+
+.rating-summary-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #1976d2;
+  line-height: 1.2;
+}
+
+.rating-summary-average {
+  color: #f57c00;
+}
+
+.rating-stars {
+  position: relative;
+  display: inline-block;
+  direction: ltr;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 2px;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+.rating-stars-track {
   color: #e0e0e0;
 }
 
-.review-date {
+.rating-stars-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  color: #ffc107;
+}
+
+.rating-summary-label {
   font-size: 11px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.rating-summary-date {
+  font-size: 10px;
   color: #999;
+  margin-top: 4px;
+  text-align: center;
 }
 
 /* Linka Section */
@@ -283,74 +516,13 @@ body {
   margin-top: 4px;
 }
 
-.review-text {
-  font-size: 13px;
-  color: #444;
-  line-height: 1.6;
-  margin-bottom: 8px;
-  max-height: 100px;
-  overflow: hidden;
-  position: relative;
-}
-
-.review-text.expanded {
-  max-height: none;
-}
-
-.review-text::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 30px;
-  background: linear-gradient(transparent, white);
-  pointer-events: none;
-}
-
-.review-text.expanded::after {
-  display: none;
-}
-
-.read-more {
-  font-size: 11px;
-  color: #1976d2;
-  cursor: pointer;
-  border: none;
-  background: none;
-  padding: 0;
-}
-
-.read-more:hover {
-  text-decoration: underline;
-}
-
-.review-pros, .review-cons {
-  font-size: 12px;
-  margin-top: 6px;
-}
-
-.review-pros {
-  color: #2e7d32;
-}
-
-.review-cons {
-  color: #c62828;
-}
-
-.review-pros::before {
-  content: 'مزایا: ';
-  font-weight: 600;
-}
-
-.review-cons::before {
-  content: 'معایب: ';
-  font-weight: 600;
-}
-
 .actions {
   display: flex;
   gap: 8px;
+}
+
+.reviews-actions {
+  margin-top: 12px;
 }
 
 .btn {
@@ -368,10 +540,29 @@ body {
 .btn-primary {
   background: #1976d2;
   color: white;
+  animation: btn-pulse 2s infinite;
 }
 
 .btn-primary:hover {
   background: #1565c0;
+}
+
+@keyframes btn-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0.5); }
+  70% { box-shadow: 0 0 0 10px rgba(25, 118, 210, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(25, 118, 210, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-primary {
+    animation: none;
+  }
+
+  .skeleton-card,
+  .skeleton-avatar,
+  .skeleton-line {
+    animation: none;
+  }
 }
 
 .btn-secondary {
@@ -522,4 +713,198 @@ body {
 
 .danesh-bonyan-info-item:nth-child(1) {
   grid-column: span 2;
+}
+
+/* ---------------------------------------------------------------------------
+   Dark mode
+   --------------------------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #17181c;
+    color: #e7e7ea;
+    color-scheme: dark;
+  }
+
+  .header {
+    border-bottom-color: #34373f;
+  }
+
+  .title {
+    color: #e7e7ea;
+  }
+
+  .logo-text {
+    color: #a0a3ab;
+  }
+
+  .logo-text:hover,
+  .footer a:hover,
+  .linka-link:hover {
+    color: #64b5f6;
+  }
+
+  .loading p,
+  .not-company,
+  .company-city,
+  .company-name-en,
+  .rating-summary-label,
+  .rating-summary-date,
+  .linka-national-id,
+  .danesh-bonyan-label,
+  .search-term,
+  .hint {
+    color: #a0a3ab;
+  }
+
+  .spinner {
+    border-color: #34373f;
+    border-top-color: #64b5f6;
+  }
+
+  .error {
+    background: #3a1f24;
+    color: #ffb4ab;
+  }
+
+  .company-card,
+  .rating-summary-item,
+  .linka-card,
+  .danesh-bonyan-card,
+  .reviews-empty,
+  .skeleton-row {
+    background: #22242a;
+    box-shadow: none;
+    border: 1px solid #34373f;
+  }
+
+  .company-name,
+  .reviews-title,
+  .linka-title,
+  .danesh-bonyan-title,
+  .linka-name,
+  .danesh-bonyan-name,
+  .danesh-bonyan-value,
+  .not-found-title {
+    color: #e7e7ea;
+  }
+
+  .section-header,
+  .linka-subtitle,
+  .danesh-bonyan-subtitle,
+  .footer,
+  .danesh-bonyan-header {
+    border-bottom-color: #34373f;
+    border-top-color: #34373f;
+  }
+
+  .match-status.loading {
+    background: #12263a;
+    color: #90caf9;
+  }
+
+  .match-status.found {
+    background: #15301c;
+    color: #a5d6a7;
+  }
+
+  .match-status.weak {
+    background: #33290c;
+    color: #ffe082;
+  }
+
+  .match-status.none {
+    background: #3a1f24;
+    color: #ffb4ab;
+  }
+
+  .match-status-icon {
+    background: rgba(255, 255, 255, 0.12);
+  }
+
+  .rating-summary-value {
+    color: #64b5f6;
+  }
+
+  .rating-summary-average {
+    color: #ffb74d;
+  }
+
+  .rating-stars-track {
+    color: #3c3f47;
+  }
+
+  .refresh-btn {
+    background: #262b33;
+    border-color: #39424e;
+    color: #64b5f6;
+  }
+
+  .refresh-btn:hover {
+    background: #2e3540;
+  }
+
+  .side-panel-toggle {
+    background: #262b33;
+    border-color: #39424e;
+    color: #64b5f6;
+  }
+
+  .side-panel-toggle:hover {
+    background: #2e3540;
+  }
+
+  .side-panel-toggle[aria-pressed="true"] {
+    background: #1565c0;
+    border-color: #1565c0;
+    color: white;
+  }
+
+  .linka-link,
+  .footer a {
+    color: #64b5f6;
+  }
+
+  .linka-badge,
+  .danesh-bonyan-match-badge.exact-match {
+    background: #2e7d32;
+  }
+
+  .danesh-bonyan-match-badge.partial-match {
+    background: #b8860b;
+    color: #fff;
+  }
+
+  .danesh-bonyan-info-item {
+    background: #2a2d34;
+  }
+
+  .btn-secondary {
+    background: #2a2d34;
+    color: #e7e7ea;
+  }
+
+  .btn-secondary:hover {
+    background: #34373f;
+  }
+
+  .reviews-empty {
+    color: #a0a3ab;
+  }
+
+  .section-error {
+    background: #3a1f24;
+    color: #ffb4ab;
+  }
+
+  .skeleton-card,
+  .skeleton-avatar,
+  .skeleton-line {
+    background: linear-gradient(90deg, #2a2d34 25%, #34373f 37%, #2a2d34 63%);
+    background-size: 400% 100%;
+  }
+
+  .not-company p {
+    color: #a0a3ab;
+  }
 }

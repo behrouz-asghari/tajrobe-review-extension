@@ -13,22 +13,29 @@
 
 A Chrome extension that displays company reviews and registration information when browsing job listings on [JobVision](https://jobvision.ir) and [Jobinja](https://jobinja.ir).
 
-<img width="1919" height="1031" alt="Screenshot-Demo" src="https://github.com/user-attachments/assets/71413f6f-2d67-4044-b7ab-ba35d4d1668f" />
-
+<img width="1323" height="992" alt="Screenshot 2026-07-09 012914" src="https://github.com/user-attachments/assets/6b36ea65-7cdc-4760-9994-9ec2a3d437f3" />
+<img width="1318" height="938" alt="Screenshot 2026-07-17 105335" src="https://github.com/user-attachments/assets/044ae9a6-796c-4f63-8f8d-5b0c75f7c888" />
+<img width="1276" height="944" alt="Screenshot 2026-08-18 144233" src="https://github.com/user-attachments/assets/c3c8a098-6de3-4923-9c3b-57e0c9ca435f" />
 
 </div>
 
 ## Features
 
 - **Auto-detect company pages** on JobVision and Jobinja
-- **Fetch work experience reviews** from [Tajrobe](https://tajrobe.github.io)
+- **Fetch review totals** (number of reviews, average rating and date of the latest review) from [Tajrobe](https://tajrobe.github.io)
 - **Display company registration info** from [Linka.ir](https://linka.ir) API
 - **Knowledge-based company detection** - Check if company is registered in [Danesh Bonyan](https://daneshbonyan.ir) system
+- **Strict company matching** - Only real matches are shown; a weaker match is flagged as "closest company" with its confidence percentage instead of silently displaying another company's data
 - **Name similarity matching** - Shows percentage match between searched name and results
 - **Exact name matching badge** - Shows ✅ when company names match exactly
-- **Persian date conversion** - Displays dates in Shamsi (Jalali) calendar
-- **RTL support** - Full Persian/Farsi interface
-- **Badge indicators** - Shows checkmark (✓) or cross (✗) on extension icon
+- **Found-status banner** - The popup states clearly whether the company was found before showing its numbers
+- **Per-tab result caching** - Each tab keeps its own cached data, the badge and popup share it, and reopening the popup is instant
+- **Browser side panel** - A header toggle shows the extension in the browser side panel instead of the toolbar popup, and follows tab/company changes while open
+- **Manual refresh** - A refresh button re-fetches the current tab's data at any time
+- **SPA navigation aware** - Detects company changes inside JobVision/Jobinja without a full page reload
+- **Dark mode** - Follows the operating system appearance
+- **RTL support** - Full Persian/Farsi interface with Persian digits
+- **Badge indicators** - Shows checkmark (✓), question mark (?) or cross (✗) on extension icon
 
 ## Community Recognition
 This extension is officially featured on the [Tajrobe project page](https://tajrobe.github.io/browser-extension/) as a recommended utility. It is recognized as a community-driven tool that integrates authentic employee reviews directly into job search platforms to assist developers and professionals in making informed career decisions.See the [DISCLAIMER](DISCLAIMER.md) ⚠️
@@ -69,9 +76,11 @@ This extension is officially featured on the [Tajrobe project page](https://tajr
 
 3. View the information:
    - Company info from Tajrobe
-   - Work experience reviews with ratings
+   - Number of reviews, average rating and the date of the latest review
    - Company registration details from Linka.ir
    - Knowledge-based company status from Danesh Bonyan
+
+4. To keep the extension open while browsing, press **نوار کناری** in the header. This opens the extension in the browser side panel and makes the toolbar icon open the panel from now on. Press it again (inside the panel) to return to the normal popup.
 
 ## How It Works
 
@@ -86,7 +95,7 @@ This extension is officially featured on the [Tajrobe project page](https://tajr
 
 | Source | Data Type |
 |--------|-----------|
-| [Tajrobe](https://tajrobe.github.io) | Work experience reviews, company ratings |
+| [Tajrobe](https://tajrobe.github.io) | Number of reviews, average company rating |
 | [Linka.ir](https://linka.ir) | Company registration info, national ID, logo |
 | [Danesh Bonyan](https://daneshbonyan.ir) | Knowledge-based company status, technology zone, approval date |
 
@@ -96,11 +105,32 @@ This extension is officially featured on the [Tajrobe project page](https://tajr
 - **Linka**: `https://api.linka.ir/Api/V1/Site/SuggestionSearch?search={name}&typeId=2`
 - **Danesh Bonyan**: `https://api.daneshbonyan.ir/kb-co-pub-info/list` (POST with `{term: companyName}`)
 
+### Caching
+
+Fetched data is cached per tab in `chrome.storage.session`, keyed by the tab id and the
+page URL, for 30 minutes. The page-load badge uses the same cache as the popup, so the
+company page is only fetched once. Closing and reopening the popup reuses that cache, so
+the information stays available for the window it belongs to, and multiple open company
+pages never mix their data. Cache entries are dropped when the tab navigates to another
+page or is closed, and the refresh button clears them on demand. The 359 KB search index
+is also stored for 6 hours, so a restarted service worker does not download it again.
+
+### Side panel
+
+The same interface is registered as the extension's side panel (`side_panel.default_path`
+in the manifest). The header toggle stores the preference, calls
+`chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick })` and opens the panel for
+the current window. Because the panel stays open while the user browses, it listens for
+tab activation, tab URL changes and the `COMPANY_UPDATED`/`COMPANY_CLEARED` events from
+the background worker and reloads its own data, so it always shows the company of the
+active tab.
+
 ## Badge Indicators
 
 | Badge | Meaning |
 |-------|---------|
 | ✓ (Green) | Company found in Tajrobe database |
+| ? (Amber) | Only a close match was found; verify it in the popup |
 | ✗ (Red) | Company not found in Tajrobe database |
 | (Empty) | Not on a company page or left company page |
 
@@ -140,7 +170,8 @@ The extension uses the minimum permissions required for company detection, API a
 
 - `activeTab` - Access the currently open company page
 - `tabs` - Detect tab changes and clear/update badge state
-- `storage` - Cache company data and temporary results
+- `storage` - Cache company data, the search index and the side panel preference
+- `sidePanel` - Show the extension in the browser side panel
 - `host_permissions` - Access external data sources:
   - `https://tajrobe.github.io/*`
   - `https://jobvision.ir/*`
@@ -177,8 +208,9 @@ company-review-extension/
 ├── background.js      # Service worker for API calls
 ├── content.js         # Content script for name extraction
 ├── popup.html         # Popup UI
-├── popup.css          # Popup styles
+├── popup.css          # Popup styles (light/dark, skeletons, animations)
 ├── popup.js           # Popup logic
+├── tests/             # Node tests for parsing, matching and caching
 ├── icons/             # Extension icons
 └── README.md          # This file
 ```
@@ -186,6 +218,12 @@ company-review-extension/
 ### Building
 
 No build step required. This is a vanilla JavaScript Chrome extension.
+
+### Testing
+
+```
+node --test tests/background.test.js
+```
 
 ## Contributing
 

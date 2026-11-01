@@ -1,0 +1,10 @@
+.DS_Store
+.vscode/
+node_modules/
+*.log
+*.crx
+*.pem
+/_metadata/
+/.mimocode/
+/.freebuff/
+.mimocode/

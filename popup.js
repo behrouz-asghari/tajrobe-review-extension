@@ -1,4 +1,14 @@
-// Popup script - displays company info and reviews from tajrobe.github.io
+// Popup script - displays company info and review summary from tajrobe.github.io
+
+// ---------------------------------------------------------------------------
+// Formatting helpers
+// ---------------------------------------------------------------------------
+
+function toPersianDigits(value) {
+  return String(value)
+    .replace(/[0-9]/g, digit => '۰۱۲۳۴۵۶۷۸۹'[digit])
+    .replace(/,/g, '٬');
+}
 
 // Gregorian to Shamsi (Jalali) date converter
 function gregorianToShamsi(gy, gm, gd) {
@@ -36,21 +46,14 @@ function gregorianToShamsi(gy, gm, gd) {
   return { year: jy, month: jm, day: jd };
 }
 
-function convertToShamsi(dateStr) {
-  if (!dateStr) return '';
+function formatReviewDate(timestamp) {
+  if (!timestamp) return '';
 
-  // Try to parse the date string
-  // Format: "December 16, 2025" or similar
-  const dateObj = new Date(dateStr);
-  if (isNaN(dateObj.getTime())) return dateStr;
+  const date = new Date(Number(timestamp));
+  if (isNaN(date.getTime())) return '';
 
-  const gy = dateObj.getFullYear();
-  const gm = dateObj.getMonth() + 1;
-  const gd = dateObj.getDate();
+  const shamsi = gregorianToShamsi(date.getFullYear(), date.getMonth() + 1, date.getDate());
 
-  const shamsi = gregorianToShamsi(gy, gm, gd);
-
-  // Persian month names
   const monthNames = [
     'فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد', 'شهریور',
     'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'
@@ -59,256 +62,537 @@ function convertToShamsi(dateStr) {
   return `${shamsi.day} ${monthNames[shamsi.month - 1]} ${shamsi.year}`;
 }
 
-document.addEventListener('DOMContentLoaded', async () => {
+// ---------------------------------------------------------------------------
+// State
+// ---------------------------------------------------------------------------
+
+let currentTab = null;
+let currentSearchName = '';
+let loadToken = 0;
+let sidePanelMode = false;
+let reloadTimer = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('refresh-btn').addEventListener('click', refreshResults);
+  document.getElementById('side-panel-toggle').addEventListener('click', toggleSidePanel);
+
+  registerAutoRefresh();
+  initSidePanelToggle();
+  loadCompanyData();
+});
+
+function show(el, display) {
+  el.style.display = display || 'block';
+}
+
+function hide(el) {
+  el.style.display = 'none';
+}
+
+// ---------------------------------------------------------------------------
+// Loading
+// ---------------------------------------------------------------------------
+
+async function loadCompanyData() {
+  const token = ++loadToken;
+
   const loadingEl = document.getElementById('loading');
   const errorEl = document.getElementById('error');
   const notCompanyEl = document.getElementById('not-company');
   const resultEl = document.getElementById('result');
-  const notFoundEl = document.getElementById('not-found');
 
-  // Hide all sections initially
-  [errorEl, notCompanyEl, resultEl, notFoundEl].forEach(el => {
-    el.style.display = 'none';
-  });
+  show(loadingEl, 'block');
+  hide(errorEl);
+  hide(notCompanyEl);
+  hide(resultEl);
 
   try {
-    // Get last company from storage
-    const data = await chrome.storage.local.get('lastCompany');
-    const lastCompany = data.lastCompany;
-
-    if (!lastCompany || !lastCompany.name) {
-      showNotCompany();
-      return;
-    }
-
-    // Check if data is stale (older than 5 minutes)
-    if (Date.now() - lastCompany.timestamp > 5 * 60 * 1000) {
-      showNotCompany();
-      return;
-    }
-
-    // Check if we're still on the same page
+    // Only the current tab's own company info is used, so several open
+    // company pages never mix their data
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab.url !== lastCompany.url) {
+    if (token !== loadToken) return;
+
+    if (!tab || typeof tab.id !== 'number') {
       showNotCompany();
       return;
     }
 
-    // Search for the company
-    const result = await searchCompany(lastCompany.name);
+    currentTab = tab;
 
-    if (result.found) {
-      showResult(result.company);
+    const companyInfo = await getCompanyInfo(tab.id, tab.url);
+    if (token !== loadToken) return;
 
-      // Also search Linka API for company registration info
-      const linkaResult = await searchLinkaAPI(lastCompany.name);
-      if (linkaResult.success && linkaResult.companies) {
-        showLinkaResults(linkaResult.companies, lastCompany.name);
+    if (!companyInfo || !companyInfo.name) {
+      showNotCompany();
+      return;
+    }
+
+    // Show the company name and skeletons right away, then load the three
+    // sources in parallel
+    const searchName = companyInfo.name;
+    currentSearchName = searchName;
+    startLoading(searchName);
+
+    const linkaPromise = searchLinkaAPI(searchName, tab.id, tab.url)
+      .then(result => { if (token === loadToken) renderLinka(result); })
+      .catch(() => { if (token === loadToken) renderLinkaError(); });
+
+    const daneshPromise = searchDaneshBonyanAPI(searchName, tab.id, tab.url)
+      .then(result => { if (token === loadToken) renderDaneshBonyan(result); })
+      .catch(() => { if (token === loadToken) renderDaneshBonyanError(); });
+
+    const tajrobePromise = searchCompany(searchName, tab.id, tab.url);
+
+    try {
+      const result = await tajrobePromise;
+      if (token !== loadToken) return;
+
+      if (result && result.found && result.company) {
+        renderFound(result);
+      } else if (result && result.error) {
+        showError(result.error);
+      } else {
+        renderNotFound(searchName);
       }
+    } catch (error) {
+      if (token === loadToken) showError(error.message);
     }
 
-    // Search Danesh Bonyan API for knowledge-based company info (independent of tajrobe result)
-    const daneshBonyanResult = await searchDaneshBonyanAPI(lastCompany.name);
-    if (daneshBonyanResult.success && daneshBonyanResult.companies) {
-      showDaneshBonyanResults(daneshBonyanResult.companies, lastCompany.name);
-    }
+    await Promise.allSettled([linkaPromise, daneshPromise]);
 
-    if (!result.found) {
-      showNotFound(lastCompany.name);
-    }
+    if (token === loadToken) finishLoading();
+  } catch (error) {
+    if (token === loadToken) showError(error.message);
+  }
+}
+
+async function refreshResults() {
+  const refreshBtn = document.getElementById('refresh-btn');
+  if (!currentTab || refreshBtn.disabled) return;
+
+  refreshBtn.disabled = true;
+
+  try {
+    await sendMessage({ type: 'REFRESH_TAB', tabId: currentTab.id });
+    await loadCompanyData();
   } catch (error) {
     showError(error.message);
   } finally {
-    loadingEl.style.display = 'none';
+    refreshBtn.disabled = false;
   }
-});
+}
 
-function showResult(company) {
+function startLoading(companyName) {
+  const loadingEl = document.getElementById('loading');
   const resultEl = document.getElementById('result');
+  const cardEl = document.getElementById('company-card');
   const nameEl = document.getElementById('company-name');
   const nameEnEl = document.getElementById('company-name-en');
   const cityEl = document.getElementById('company-city');
-  const linkEl = document.getElementById('company-link');
+  const logoEl = document.getElementById('company-logo');
+  const reviewsSection = document.getElementById('reviews-section');
+  const summaryEl = document.getElementById('rating-summary');
+  const skeletonEl = document.getElementById('rating-skeleton');
+  const emptyEl = document.getElementById('reviews-empty');
+  const actionsEl = document.querySelector('.reviews-actions');
+  const linkaSection = document.getElementById('linka-section');
+  const linkaList = document.getElementById('linka-list');
+  const linkaSkeleton = document.getElementById('linka-skeleton');
+  const linkaError = document.getElementById('linka-error');
+  const daneshSection = document.getElementById('danesh-bonyan-section');
+  const daneshList = document.getElementById('danesh-bonyan-list');
+  const daneshSkeleton = document.getElementById('danesh-skeleton');
+  const daneshError = document.getElementById('danesh-error');
+  const notFoundEl = document.getElementById('not-found');
+
+  hide(loadingEl);
+  show(resultEl, 'block');
+
+  setStatus('loading', '…', `در حال جستجوی تجربه‌های کاری «${companyName}»…`);
+
+  show(cardEl, 'block');
+  nameEl.textContent = companyName;
+  nameEnEl.textContent = '';
+  cityEl.textContent = '';
+  hide(logoEl);
+
+  show(reviewsSection, 'block');
+  hide(summaryEl);
+  show(skeletonEl, 'grid');
+  hide(emptyEl);
+  hide(actionsEl);
+
+  show(linkaSection, 'block');
+  linkaList.innerHTML = '';
+  show(linkaSkeleton, 'block');
+  hide(linkaError);
+
+  show(daneshSection, 'block');
+  daneshList.innerHTML = '';
+  show(daneshSkeleton, 'block');
+  hide(daneshError);
+
+  hide(notFoundEl);
+}
+
+// ---------------------------------------------------------------------------
+// Side panel
+// ---------------------------------------------------------------------------
+
+async function initSidePanelToggle() {
+  const toggle = document.getElementById('side-panel-toggle');
+
+  if (!chrome.sidePanel) {
+    // Older browsers without the side panel API
+    toggle.style.display = 'none';
+    return;
+  }
+
+  try {
+    const stored = await chrome.storage.local.get('openInSidePanel');
+    updateSidePanelToggle(!!stored.openInSidePanel);
+  } catch (error) {
+    updateSidePanelToggle(false);
+  }
+}
+
+function updateSidePanelToggle(enabled) {
+  sidePanelMode = !!enabled;
+
+  const toggle = document.getElementById('side-panel-toggle');
+  toggle.setAttribute('aria-pressed', enabled ? 'true' : 'false');
+  toggle.title = enabled
+    ? 'کلیک روی آیکون افزونه نوار کناری را باز می‌کند؛ برای بازگشت به پاپ‌آپ کلیک کنید'
+    : 'باز شدن افزونه در نوار کناری مرورگر';
+}
+
+async function toggleSidePanel() {
+  const toggle = document.getElementById('side-panel-toggle');
+  if (toggle.disabled) return;
+
+  const enabling = !sidePanelMode;
+
+  if (enabling) {
+    // The panel must be opened while the click's user gesture is still active
+    const windowId = currentTab ? currentTab.windowId : undefined;
+    let openPromise = Promise.resolve();
+
+    if (chrome.sidePanel && chrome.sidePanel.open && typeof windowId === 'number') {
+      try {
+        openPromise = chrome.sidePanel.open({ windowId: windowId });
+      } catch (error) {
+        openPromise = Promise.resolve();
+      }
+    }
+
+    await setSidePanelMode(true);
+
+    try {
+      await openPromise;
+    } catch (error) {
+      // Panel could not be opened now, but the toolbar setting is saved
+    }
+  } else {
+    await setSidePanelMode(false);
+  }
+}
+
+async function setSidePanelMode(enabled) {
+  updateSidePanelToggle(enabled);
+
+  try {
+    await sendMessage({ type: 'SET_SIDE_PANEL_MODE', enabled: enabled });
+  } catch (error) {
+    // Revert the toggle when the background could not save the preference
+    updateSidePanelToggle(!enabled);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Auto refresh (needed while the extension is open in the side panel)
+// ---------------------------------------------------------------------------
+
+function registerAutoRefresh() {
+  if (!chrome.tabs || !chrome.tabs.onActivated) return;
+
+  chrome.tabs.onActivated.addListener(() => scheduleReload(300));
+
+  chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
+    if (!currentTab || tabId !== currentTab.id) return;
+    if (changeInfo.url || changeInfo.status === 'complete') scheduleReload(400);
+  });
+
+  chrome.runtime.onMessage.addListener((message) => {
+    if (!currentTab || !message) return;
+    if (message.tabId !== currentTab.id) return;
+
+    if (message.type === 'COMPANY_UPDATED' || message.type === 'COMPANY_CLEARED') {
+      scheduleReload(500);
+    }
+  });
+}
+
+function scheduleReload(delay) {
+  if (reloadTimer) clearTimeout(reloadTimer);
+
+  reloadTimer = setTimeout(() => {
+    reloadTimer = null;
+    if (document.visibilityState === 'visible') loadCompanyData();
+  }, delay);
+}
+
+function finishLoading() {
+  hide(document.getElementById('loading'));
+
+  // Safety net: no skeleton should stay visible
+  const skeletons = ['rating-skeleton', 'linka-skeleton', 'danesh-skeleton'];
+  skeletons.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) hide(el);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Rendering
+// ---------------------------------------------------------------------------
+
+function setStatus(state, icon, text) {
+  const statusEl = document.getElementById('match-status');
+  statusEl.className = `match-status ${state}`;
+  document.getElementById('match-status-icon').textContent = icon;
+  document.getElementById('match-status-text').textContent = text;
+}
+
+function renderFound(result) {
+  const company = result.company;
+
+  // Header card
+  const cardEl = document.getElementById('company-card');
+  const nameEl = document.getElementById('company-name');
+  const nameEnEl = document.getElementById('company-name-en');
+  const cityEl = document.getElementById('company-city');
   const logoEl = document.getElementById('company-logo');
   const logoImg = document.getElementById('logo-img');
-  const reviewsSection = document.getElementById('reviews-section');
-  const reviewsList = document.getElementById('reviews-list');
 
-  nameEl.textContent = company.title;
+  show(cardEl, 'block');
+  nameEl.textContent = company.title || '';
   nameEnEl.textContent = company.titleEn || '';
   cityEl.textContent = company.city || '';
-  linkEl.href = company.url;
 
   if (company.logo) {
     logoImg.src = company.logo;
-    logoEl.style.display = 'block';
+    show(logoEl, 'block');
   } else {
-    logoEl.style.display = 'none';
+    hide(logoEl);
   }
 
-  // Display reviews
-  if (company.reviews && company.reviews.length > 0) {
-    reviewsList.innerHTML = '';
+  // Status banner at the top
+  const confidence = Number(result.matchConfidence) || 0;
 
-    company.reviews.forEach((review, index) => {
-      const reviewCard = createReviewCard(review, index);
-      reviewsList.appendChild(reviewCard);
-    });
-
-    reviewsSection.style.display = 'block';
+  if (result.weakMatch) {
+    setStatus('weak', '!', `نزدیکترین شرکت: «${company.title}» — تطابق ${toPersianDigits(confidence)}٪؛ ممکن است شرکت متفاوتی باشد`);
   } else {
-    reviewsSection.style.display = 'none';
+    setStatus('found', '✓', `«${company.title}» در تجربه یافت شد`);
   }
 
-  resultEl.style.display = 'block';
+  // Review summary
+  showRatingSummary(company.reviewCount, company.averageRating, company.latestReviewDate);
+
+  // Link to all reviews
+  const actionsEl = document.querySelector('.reviews-actions');
+  const linkEl = document.getElementById('company-link');
+  if (company.url) {
+    linkEl.href = company.url;
+    show(actionsEl, 'flex');
+  }
+
+  hide(document.getElementById('not-found'));
 }
 
-function createReviewCard(review, index) {
-  const card = document.createElement('div');
-  card.className = 'review-card';
-
-  // Header with job title and date
-  const header = document.createElement('div');
-  header.className = 'review-header';
-
-  // Job title
-  const jobTitleDiv = document.createElement('div');
-  jobTitleDiv.className = 'review-job-title';
-  jobTitleDiv.textContent = review.jobTitle || '';
-
-  // Date - convert to Shamsi
-  const dateSpan = document.createElement('span');
-  dateSpan.className = 'review-date';
-  dateSpan.textContent = convertToShamsi(review.date);
-
-  header.appendChild(jobTitleDiv);
-  header.appendChild(dateSpan);
-
-  // Rating stars
-  const ratingDiv = document.createElement('div');
-  ratingDiv.className = 'review-rating';
-
-  const ratingValue = typeof review.rating === 'number' ? review.rating : 0;
-  for (let i = 1; i <= 5; i++) {
-    const star = document.createElement('span');
-    star.className = i <= ratingValue ? 'star' : 'star empty';
-    star.textContent = '★';
-    ratingDiv.appendChild(star);
-  }
-
-  // Review text
-  const textDiv = document.createElement('div');
-  textDiv.className = 'review-text';
-  textDiv.textContent = review.text;
-
-  // Read more button (if text is long)
-  const readMoreBtn = document.createElement('button');
-  readMoreBtn.className = 'read-more';
-  readMoreBtn.textContent = 'بیشتر...';
-  readMoreBtn.style.display = review.text.length > 150 ? 'block' : 'none';
-
-  readMoreBtn.addEventListener('click', () => {
-    textDiv.classList.toggle('expanded');
-    readMoreBtn.textContent = textDiv.classList.contains('expanded') ? 'کمتر' : 'بیشتر...';
-  });
-
-  // Pros and cons
-  const prosDiv = document.createElement('div');
-  prosDiv.className = 'review-pros';
-  prosDiv.textContent = review.pros;
-  prosDiv.style.display = review.pros ? 'block' : 'none';
-
-  const consDiv = document.createElement('div');
-  consDiv.className = 'review-cons';
-  consDiv.textContent = review.cons;
-  consDiv.style.display = review.cons ? 'block' : 'none';
-
-  // Assemble card
-  card.appendChild(header);
-  card.appendChild(ratingDiv);
-  card.appendChild(textDiv);
-  card.appendChild(readMoreBtn);
-  card.appendChild(prosDiv);
-  card.appendChild(consDiv);
-
-  return card;
-}
-
-function showNotFound(searchTerm) {
-  const notFoundEl = document.getElementById('not-found');
+function renderNotFound(searchName) {
+  const reviewsSection = document.getElementById('reviews-section');
+  const cardEl = document.getElementById('company-card');
+  const dateEl = document.getElementById('latest-review-date');
   const searchTermEl = document.getElementById('search-term');
   const searchLinkEl = document.getElementById('search-link');
+  const notFoundEl = document.getElementById('not-found');
 
-  searchTermEl.textContent = searchTerm;
-  searchLinkEl.href = `https://tajrobe.github.io/search/`;
+  setStatus('none', '✗', `«${searchName}» در تجربه یافت نشد`);
 
-  notFoundEl.style.display = 'block';
+  hide(cardEl);
+  hide(reviewsSection);
+  hide(dateEl);
+
+  searchTermEl.textContent = searchName;
+  searchLinkEl.href = 'https://tajrobe.github.io/search/';
+  show(notFoundEl, 'block');
+}
+
+function showRatingSummary(reviewCount, averageRating, latestReviewDate) {
+  const summaryEl = document.getElementById('rating-summary');
+  const skeletonEl = document.getElementById('rating-skeleton');
+  const emptyEl = document.getElementById('reviews-empty');
+  const countEl = document.getElementById('review-count');
+  const averageEl = document.getElementById('average-rating');
+  const starsEl = document.getElementById('rating-stars');
+  const starsFillEl = document.getElementById('rating-stars-fill');
+  const dateEl = document.getElementById('latest-review-date');
+
+  const count = Number(reviewCount) || 0;
+  const average = Number(averageRating) || 0;
+
+  hide(skeletonEl);
+
+  if (count <= 0) {
+    hide(summaryEl);
+    show(emptyEl, 'block');
+    return;
+  }
+
+  hide(emptyEl);
+  show(summaryEl, 'grid');
+
+  countEl.textContent = toPersianDigits(count.toLocaleString('en-US'));
+  averageEl.textContent = toPersianDigits(average.toFixed(1));
+
+  // Fill the stars up to the average rating (supports decimals)
+  const percentage = (Math.min(Math.max(average, 0), 5) / 5) * 100;
+  starsFillEl.style.width = `${percentage}%`;
+  starsEl.setAttribute('aria-label', `میانگین امتیاز ${toPersianDigits(average.toFixed(1))} از ۵`);
+
+  // Date of the latest review, under the review count
+  const dateText = formatReviewDate(latestReviewDate);
+  dateEl.textContent = dateText ? `آخرین تجربه: ${toPersianDigits(dateText)}` : '';
+  dateEl.style.display = dateText ? 'block' : 'none';
+}
+
+function renderLinka(result) {
+  const sectionEl = document.getElementById('linka-section');
+  const skeletonEl = document.getElementById('linka-skeleton');
+  const errorEl = document.getElementById('linka-error');
+
+  hide(skeletonEl);
+  hide(errorEl);
+
+  if (result && result.success && Array.isArray(result.companies) && result.companies.length > 0) {
+    showLinkaResults(result.companies, currentSearchName);
+    show(sectionEl, 'block');
+  } else if (result && !result.success) {
+    show(errorEl, 'block');
+    show(sectionEl, 'block');
+  } else {
+    hide(sectionEl);
+  }
+}
+
+function renderLinkaError() {
+  hide(document.getElementById('linka-skeleton'));
+  show(document.getElementById('linka-error'), 'block');
+  show(document.getElementById('linka-section'), 'block');
+}
+
+function renderDaneshBonyan(result) {
+  const sectionEl = document.getElementById('danesh-bonyan-section');
+  const skeletonEl = document.getElementById('danesh-skeleton');
+  const errorEl = document.getElementById('danesh-error');
+
+  hide(skeletonEl);
+  hide(errorEl);
+
+  if (result && result.success && Array.isArray(result.companies) && result.companies.length > 0) {
+    showDaneshBonyanResults(result.companies, currentSearchName);
+    show(sectionEl, 'block');
+  } else if (result && !result.success) {
+    show(errorEl, 'block');
+    show(sectionEl, 'block');
+  } else {
+    hide(sectionEl);
+  }
+}
+
+function renderDaneshBonyanError() {
+  hide(document.getElementById('danesh-skeleton'));
+  show(document.getElementById('danesh-error'), 'block');
+  show(document.getElementById('danesh-bonyan-section'), 'block');
 }
 
 function showError(message) {
+  const loadingEl = document.getElementById('loading');
   const errorEl = document.getElementById('error');
   const errorMessageEl = document.getElementById('error-message');
+  const resultEl = document.getElementById('result');
 
+  hide(loadingEl);
+  hide(resultEl);
   errorMessageEl.textContent = message || 'خطایی رخ داد';
-  errorEl.style.display = 'block';
+  show(errorEl, 'block');
 }
 
 function showNotCompany() {
+  const loadingEl = document.getElementById('loading');
   const notCompanyEl = document.getElementById('not-company');
-  notCompanyEl.style.display = 'block';
+
+  hide(loadingEl);
+  show(notCompanyEl, 'block');
 }
 
-async function searchCompany(companyName) {
+// ---------------------------------------------------------------------------
+// Messaging (results are cached per tab by the background worker)
+// ---------------------------------------------------------------------------
+
+function sendMessage(message) {
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { type: 'SEARCH_COMPANY', companyName: companyName },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-        } else {
-          resolve(response);
-        }
+    chrome.runtime.sendMessage(message, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+      } else {
+        resolve(response);
       }
-    );
+    });
   });
 }
 
-async function searchLinkaAPI(companyName) {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { type: 'SEARCH_LINKA', companyName: companyName },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-        } else {
-          resolve(response);
-        }
-      }
-    );
+async function getCompanyInfo(tabId, pageUrl) {
+  return sendMessage({ type: 'GET_COMPANY', tabId: tabId, pageUrl: pageUrl });
+}
+
+async function searchCompany(companyName, tabId, pageUrl) {
+  return sendMessage({
+    type: 'SEARCH_COMPANY',
+    companyName: companyName,
+    tabId: tabId,
+    pageUrl: pageUrl
   });
 }
 
-async function searchDaneshBonyanAPI(companyName) {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage(
-      { type: 'SEARCH_DANESH_BONYAN', companyName: companyName },
-      (response) => {
-        if (chrome.runtime.lastError) {
-          reject(new Error(chrome.runtime.lastError.message));
-        } else {
-          resolve(response);
-        }
-      }
-    );
+async function searchLinkaAPI(companyName, tabId, pageUrl) {
+  return sendMessage({
+    type: 'SEARCH_LINKA',
+    companyName: companyName,
+    tabId: tabId,
+    pageUrl: pageUrl
   });
 }
+
+async function searchDaneshBonyanAPI(companyName, tabId, pageUrl) {
+  return sendMessage({
+    type: 'SEARCH_DANESH_BONYAN',
+    companyName: companyName,
+    tabId: tabId,
+    pageUrl: pageUrl
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Sections: Linka.ir and Danesh Bonyan results
+// ---------------------------------------------------------------------------
 
 function showLinkaResults(companies, searchTerm) {
   const linkaSection = document.getElementById('linka-section');
   const linkaList = document.getElementById('linka-list');
 
   if (!companies || companies.length === 0) {
-    linkaSection.style.display = 'none';
+    hide(linkaSection);
     return;
   }
 
@@ -335,7 +619,7 @@ function showLinkaResults(companies, searchTerm) {
 
     const nationalId = document.createElement('div');
     nationalId.className = 'linka-national-id';
-    nationalId.textContent = `شناسه ملی: ${company.nationalId}`;
+    nationalId.textContent = `شناسه ملی: ${toPersianDigits(company.nationalId)}`;
 
     info.appendChild(name);
     info.appendChild(nationalId);
@@ -347,7 +631,7 @@ function showLinkaResults(companies, searchTerm) {
     if (isExactMatch) {
       const badge = document.createElement('div');
       badge.className = 'linka-badge';
-      badge.textContent = 'مشابه اسمی %100 ✅';
+      badge.textContent = 'مشابه اسمی ٪۱۰۰ ✅';
       info.appendChild(badge);
     }
 
@@ -364,7 +648,7 @@ function showLinkaResults(companies, searchTerm) {
     linkaList.appendChild(card);
   });
 
-  linkaSection.style.display = 'block';
+  show(linkaSection, 'block');
 }
 
 function showDaneshBonyanResults(companies, searchTerm) {
@@ -372,7 +656,7 @@ function showDaneshBonyanResults(companies, searchTerm) {
   const daneshBonyanList = document.getElementById('danesh-bonyan-list');
 
   if (!companies || companies.length === 0) {
-    daneshBonyanSection.style.display = 'none';
+    hide(daneshBonyanSection);
     return;
   }
 
@@ -399,10 +683,10 @@ function showDaneshBonyanResults(companies, searchTerm) {
     matchBadge.className = 'danesh-bonyan-match-badge';
     if (isExactMatch) {
       matchBadge.classList.add('exact-match');
-      matchBadge.textContent = `مطابقت %100 ✅`;
+      matchBadge.textContent = 'مطابقت ٪۱۰۰ ✅';
     } else {
       matchBadge.classList.add('partial-match');
-      matchBadge.textContent = `مطابقت ${similarity}%`;
+      matchBadge.textContent = `مطابقت ٪${toPersianDigits(similarity)}`;
     }
 
     header.appendChild(nameEl);
@@ -443,7 +727,7 @@ function showDaneshBonyanResults(companies, searchTerm) {
     daneshBonyanList.appendChild(card);
   });
 
-  daneshBonyanSection.style.display = 'block';
+  show(daneshBonyanSection, 'block');
 }
 
 function createInfoItem(label, value) {
@@ -456,7 +740,7 @@ function createInfoItem(label, value) {
 
   const valueEl = document.createElement('span');
   valueEl.className = 'danesh-bonyan-value';
-  valueEl.textContent = value || '-';
+  valueEl.textContent = value ? toPersianDigits(value) : '-';
 
   item.appendChild(labelEl);
   item.appendChild(valueEl);

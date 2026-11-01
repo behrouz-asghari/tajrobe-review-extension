@@ -39,3 +39,6 @@ jobs:
           node --check background.js
           node --check content.js
           node --check popup.js
+
+      - name: Run tests
+        run: node --test tests/background.test.js
