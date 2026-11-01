@@ -199,13 +199,55 @@ No build step required. This is a vanilla JavaScript Chrome extension.
 
 ## Legal Disclaimer and Limitation of Liability
 
-This browser extension is an independent, open-source software project designed solely to retrieve and display publicly available information from third-party websites, including Tajrobe.
+### 1. Independent Software
 
-The developer is not affiliated with, does not own, operate, administer, or exercise editorial control over Tajrobe or any third-party content source. The developer does not create, submit, modify, approve, moderate, endorse, or publish any user-generated content displayed through this extension.
+This browser extension is an independent, open-source software project. It is not owned, operated, maintained, or officially endorsed by Tajrobe or its operators. The developer has no employment, partnership, agency, or organizational relationship with the operators of Tajrobe.
 
-All third-party content remains the responsibility of its original authors and publishers. The extension merely facilitates access to publicly available information and does not independently verify its accuracy, completeness, or currency.
+### 2. Scope of Developer's Involvement
 
-To the fullest extent permitted by applicable law, the developer shall not be deemed the author, publisher, or controller of third-party content solely by virtue of providing software that retrieves and displays such content. Nothing in this disclaimer excludes or limits any liability that cannot lawfully be excluded or limited.
+The developer's involvement with the Tajrobe project has been strictly limited to the development of this independent browser extension. Contributions to public repositories, including GitHub issues or technical discussions, do not constitute participation in the ownership, administration, operation, or management of the Tajrobe platform.
+
+### 3. Third-Party Content
+
+The extension retrieves and displays publicly available information from third-party websites, including user-submitted reviews, comments, ratings, and company-related information.
+
+Such content originates from and remains attributable to its respective authors and original publishing platforms. The developer does not create, commission, solicit, edit, approve, moderate, or independently verify such content, nor does its display through the extension constitute endorsement or adoption by the developer.
+
+### 4. No Editorial or Administrative Control
+
+The developer has no administrative access, editorial authority, or operational control over Tajrobe, its infrastructure, databases, user accounts, or publication processes.
+
+The extension does not provide functionality to submit reviews, publish comments, modify existing content, manage user accounts, or administer the Tajrobe platform. The developer cannot independently remove or alter content published on Tajrobe.
+
+### 5. Data Processing and Third-Party Services
+
+The extension may extract limited information from supported job-listing websites, including company names and relevant page URLs, to provide its functionality.
+
+Certain technical information may be stored temporarily in the browser's local extension storage or cached in memory. Company-related queries may also be transmitted to third-party APIs to retrieve publicly available business information.
+
+The extension does not intentionally collect users' passwords, authentication credentials, private messages, or unrelated personal browsing content.
+
+### 6. No Representation or Obligation
+
+Any information, guidance, or technical assistance provided by the developer concerning Tajrobe is offered solely in an individual and informal capacity.
+
+Such communications do not constitute representation of Tajrobe, its operators, or any other party, nor do they establish any obligation to investigate complaints, identify anonymous users, disclose private information, remove third-party content, or pursue administrative or legal proceedings on behalf of any person or organization.
+
+Requests concerning user-generated content, authorship, account information, complaints, or content removal must be directed to the relevant platform operators or pursued through the appropriate legal channels.
+
+### 7. Accuracy and Use of Third-Party Information
+
+All information retrieved from third-party sources is provided for informational purposes only. The developer makes no representation or warranty regarding its accuracy, completeness, legality, reliability, or continued availability.
+
+Users should consult the original publishing sources when verifying information or making employment, business, or legal decisions.
+
+### 8. Limitation of Liability
+
+The developer's role is limited to providing and maintaining independent software that facilitates access to publicly available third-party information. The developer does not participate in the creation, commissioning, publication, or editorial management of content on Tajrobe.
+
+Accordingly, the developer does not assume responsibility for the statements, opinions, allegations, or other materials independently submitted or published by third parties, solely by virtue of the extension retrieving and displaying such information.
+
+This disclaimer is intended to accurately describe the developer's role, activities, and limitations of control in accordance with applicable laws, including the laws of the Islamic Republic of Iran.
 
 
 ## License
