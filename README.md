@@ -196,6 +196,18 @@ No build step required. This is a vanilla JavaScript Chrome extension.
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
+
+## Legal Disclaimer and Limitation of Liability
+
+This browser extension is an independent, open-source software project designed solely to retrieve and display publicly available information from third-party websites, including Tajrobe.
+
+The developer is not affiliated with, does not own, operate, administer, or exercise editorial control over Tajrobe or any third-party content source. The developer does not create, submit, modify, approve, moderate, endorse, or publish any user-generated content displayed through this extension.
+
+All third-party content remains the responsibility of its original authors and publishers. The extension merely facilitates access to publicly available information and does not independently verify its accuracy, completeness, or currency.
+
+To the fullest extent permitted by applicable law, the developer shall not be deemed the author, publisher, or controller of third-party content solely by virtue of providing software that retrieves and displays such content. Nothing in this disclaimer excludes or limits any liability that cannot lawfully be excluded or limited.
+
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
